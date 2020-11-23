@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
+#include <string.h>
 #include "lex.h"
 #include "bogen.h"
 
@@ -203,13 +203,20 @@ tBogen gProg[]={
 	{BogenE, {(unsigned long) 0},     NULL, 0, 0}  // 2 X ENDE 
 };
 
+// Fehlercodes für "erwartetes Symbol nicht gelesen"
+static char* errormsg;
+static char* expectedS[]={
+	":=\n\0","<=\n\0",">=\n\0","begin\n\0","call\n\0","const\n\0","do\n\0",
+	"end\n\0","if\n\0","odd\n\0","procedure\n\0", "then\n\0","var\n\0","while\n\0"
+};
+
 int parse(tBogen* pGraph){
 	
 	tBogen* pBogenBuf	= pGraph;
 	int ret 			= FAIL;
 	
 	if(Morph.MC == mcEmpty) lex();
-	
+
 	while(1){
 				
 		//passt gelesenes Symbol zu erwarteten Symbol?
@@ -218,28 +225,46 @@ int parse(tBogen* pGraph){
 			case BogenN: 
 				ret = 1; 
 				break;
-			case BogenS: 
+			case BogenS: 				
+				//vorsorglich erwartetes Symbol an Fehlermeldung anhängen
+				strcat(errormsg, " | Symbol oder Schlüsselwort: ");
+				if(pBogenBuf->BogenX.S > 127){
+					strcat(errormsg, expectedS[pBogenBuf->BogenX.S - 128]);
+				}else{
+					char append[3] = {pBogenBuf->BogenX.S, '\n', '\0'};
+					strcat(errormsg, append);
+				}
+			
 				ret = (Morph.Val.Symb == pBogenBuf->BogenX.S); 
 				break; 
 			case BogenM: 
-				ret = (Morph.MC == (tMC) pBogenBuf->BogenX.M); 
+				//vorsorglich erwartetes Token an Fehlermeldung anhängen
+				strcat(errormsg, " | <Bezeichner>\n");
+			
+				ret = (Morph.MC == (tMC) pBogenBuf->BogenX.M);
 				break;
 			case BogenG:
+				//neuer Bogen -> Fehlermeldung hinfällig				
+				strcpy(errormsg, "\0");
+				
 				ret = parse(pBogenBuf->BogenX.G);
 				break;
 			case BogenE:
-				printf("BogenEnde\n");
+				
+				//alles okay -> Fehlermeldung hinfällig
+				strcpy(errormsg, "\0");
 				return OK;		
 		}
 		
 		//Semantikroutinen hier ausführen (Funktionspointer)
 		
-		//keine Erfolg --> Alternative?
+		//kein Erfolg --> Alternative?
 		if(!ret){
 			
 			if(pBogenBuf->altBogen != 0){
 				//setze Alternativbogen	
 				pBogenBuf = pGraph + pBogenBuf->altBogen;
+			
 			}else{
 				//kein Alternativbogen verfügbar
 				return FAIL;
@@ -247,10 +272,8 @@ int parse(tBogen* pGraph){
 		//Erfolg --> neu lexen?	
 		}else{
 			
-			if(pBogenBuf->bt & BogenS || pBogenBuf->bt & BogenM){
-				
-				lex();
-			}
+			//Symbol oder Morphem -> darauf folgt nächstes Zeichen
+			if(pBogenBuf->bt & BogenS || pBogenBuf->bt & BogenM) lex();
 			
 			//setze Folgebogen 
 			pBogenBuf = pGraph+pBogenBuf->nxtBogen;			
@@ -258,15 +281,31 @@ int parse(tBogen* pGraph){
 	}
 }
 
+
+
 int main(int argc, char* argv[]){
 	
-	if(argc > 1){
+	errormsg = malloc(1024);
+	
+	if(argc > 1 && errormsg){
 		if(initLex(argv[1])){			
 			if(parse(gProg) == 1){
 				printf("korrekt geparst\n");
 			}else{
-				printf("Syntaxfehler\n");
+				printf("Syntaxfehler Zeile: %d, Spalte: %d\n",Morph.posLine, Morph.posCol);
+				printf("%s erwartet, aber \n",errormsg);
+				if(Morph.MC == mcSymb){
+					if(Morph.Val.Symb > 127)	printf("Schlüsselwort: %s gefunden\n", expectedS[Morph.Val.Symb - 128]);
+					else if(Morph.Val.Symb==-1)	printf("EOF gefunden\n");
+					else 						printf("Symbol: %c gefunden\n", (char)Morph.Val.Symb);
+				}
+				else if(Morph.MC == mcIdent) 	printf("Bezeichner: %s gefunden\n",Morph.Val.pStr);
+				else if(Morph.MC == mcNum)		printf("Zahl: %ld gefunden\n", Morph.Val.Num);
+				else 							printf("nichts gefunden\n");
 			}
 		}
-	}
+	}else return 1;
+	
+	free(errormsg);
+	return 0;
 }

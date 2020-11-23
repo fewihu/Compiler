@@ -1,6 +1,9 @@
 //Felix Müller 18-041-61
 //Lexer PL0
 
+#ifndef LEX_H
+#define LEX_H
+
 //Funktionpointer für Aktionen
 typedef void (*funcPointer) (void);
 
@@ -39,3 +42,5 @@ static void b(void);
 static void sl(void);
 static void gsl(void);
 static void slb(void);
+
+#endif

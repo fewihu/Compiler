@@ -1,8 +1,8 @@
-#ifndef PARS_H
-#define PARS_H
-
 //Felix Müller 18-041-61 
 //Parser PL0
+
+#ifndef PARS_H
+#define PARS_H
 
 #define OK 1
 #define FAIL 0

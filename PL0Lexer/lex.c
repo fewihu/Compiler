@@ -107,6 +107,8 @@ static tMorph MorphInit; 		//static zum 0-initialisiert
 //Lexer Initialisierung
 int initLex(char* fileName){
 
+	Morph = MorphInit;
+
 	bufIndex = 0;
 
 	pFile	= fopen(fileName, "r+t");
@@ -215,7 +217,11 @@ static void b(void){
 					Morph.MC = mcSymb;
 					Morph.Val.Symb = 130 + htkw[hIndex];
 					break;
-				} 
+				}else{
+					Morph.MC = mcIdent;
+					Morph.Val.pStr = buf;
+					break;
+				}
 			}
 	}		
 	end++;
