@@ -4,11 +4,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "lex.h"
 #include "bogen.h"
+#include "simpleList.h"
+#include "identDescr.h"
+#include "semRoutinen.h"
 
 //in lex.c als extern definiert
 tMorph Morph={0};
+
+extern procDescr* currProc;	//aktuell umgebende Prozedur
+extern long* constBlock;	//Konstantenblock
+extern int constBlockSize;	//Größe des Konstantenblocks
 
 tBogen gExpr[]; //muss in factor bekannt sein
 
@@ -174,24 +182,24 @@ tBogen gStmt[]={
 tBogen gBlck[]={
 	{BogenS, {(unsigned long) zCST},    NULL, 2, 1},	// 0  CONST 				(0-1)
 	{BogenN, {(unsigned long) 0},       NULL, 7, 0},	// 1  Nil zu VAR 			(0-5)
-	{BogenM, {(unsigned long) mcIdent}, NULL, 3, 0},	// 2  IDENT 				(1-2)
+	{BogenM, {(unsigned long) mcIdent}, bl1 , 3, 0},	// 2  IDENT 				(1-2)
 	{BogenS, {(unsigned long) '='},     NULL, 4, 0},	// 3  =						(2-3)
-	{BogenM, {(unsigned long) mcNum},   NULL, 5, 0},	// 4  mcNum					(3-4)
+	{BogenM, {(unsigned long) mcNum},   bl2 , 5, 0},	// 4  mcNum					(3-4)
 	{BogenS, {(unsigned long) ','},     NULL, 2, 6},	// 5  , zwischen CONST IDENT(4-1)
 	{BogenS, {(unsigned long) ';'},     NULL, 7, 0},	// 6  ; schließt CONST ab	(4-5)
 	// Ende vom  CONST Teil -> VAR Teil
 	{BogenS, {(unsigned long) zVAR},    NULL, 9, 8},	// 7  VAR					(5-6)
 	{BogenN, {(unsigned long) 0},       NULL,12, 0},	// 8  Nil zu PROCEDURE		(5-8)
-	{BogenM, {(unsigned long) mcIdent}, NULL,10, 0},	// 9  IDENT					(6-7)
+	{BogenM, {(unsigned long) mcIdent}, bl3 ,10, 0},	// 9  IDENT					(6-7)
 	{BogenS, {(unsigned long) ','},     NULL, 9,11},	// 10 , zwischen IDENT		(7-6)
 	{BogenS, {(unsigned long) ';'},     NULL,12, 0},	// 11 ; VAR -> PROCEDURE	(7-8)
 	// Ende vom VAR Teil -> PROCEDURE Teil
 	{BogenS, {(unsigned long) zPRC},    NULL,14,13},	// 12 PROCEDURE 			(8-9)
 	{BogenN, {(unsigned long) 0},       NULL,18, 0},	// 13 Nil zu STATEMENT		(8-13)
-	{BogenM, {(unsigned long) mcIdent}, NULL,15, 0},	// 14 IDENT für PROCEDURE	(9-10)
+	{BogenM, {(unsigned long) mcIdent}, bl4 ,15, 0},	// 14 IDENT für PROCEDURE	(9-10)
 	{BogenS, {(unsigned long) ';'},     NULL,16, 0},	// 15 ; schleißt PROC ab	(10-11)
 	{BogenG, {(unsigned long) gBlck},   NULL,17, 0},	// 16 block für PROCEDURE	(11-12)
-	{BogenS, {(unsigned long) ';'}, 	NULL,12, 0},	// 17 ; schließt block ab	(12-13)
+	{BogenS, {(unsigned long) ';'}, 	bl5 ,12, 0},	// 17 ; schließt block ab	(12-13)
 	// Ende vom PROCEDURE Teil -> statement Teil
 	{BogenG, {(unsigned long) gStmt},   NULL, 19, 0},	// 18 statement 			(13-X)
 	{BogenE, {(unsigned long) 0},       NULL,  0, 0}	// 19 X ENDE
@@ -209,6 +217,7 @@ static char* expectedS[]={
 	":=\n\0","<=\n\0",">=\n\0","begin\n\0","call\n\0","const\n\0","do\n\0",
 	"end\n\0","if\n\0","odd\n\0","procedure\n\0", "then\n\0","var\n\0","while\n\0"
 };
+
 
 int parse(tBogen* pGraph){
 	
@@ -257,6 +266,7 @@ int parse(tBogen* pGraph){
 		}
 		
 		//Semantikroutinen hier ausführen (Funktionspointer)
+		if(pBogenBuf->funcPointer != NULL) ret = pBogenBuf->funcPointer();
 		
 		//kein Erfolg --> Alternative?
 		if(!ret){
@@ -282,8 +292,16 @@ int parse(tBogen* pGraph){
 }
 
 
-
 int main(int argc, char* argv[]){
+	
+	//Hauptprogramm als aktuelle Prozedur festlegen
+	currProc = malloc(sizeof(procDescr));
+	currProc->idx 				= 0;
+	currProc->prntProc			= NULL;
+	currProc->localNameList		= malloc(sizeof(listHead));
+	currProc->memAllocCount		= 0;
+	
+	constBlockSize	= 0; 		//Größe des Konstantenblocks
 	
 	errormsg = malloc(1024);
 	
@@ -306,6 +324,13 @@ int main(int argc, char* argv[]){
 		}
 	}else return 1;
 	
-	free(errormsg);
+	printf("------------------------\nKonstantenblock:\n");
+	int i = 0;
+	while(i < constBlockSize){
+		printf("%ld\n", *(constBlock + (i * sizeof(long))));
+		i++;
+	}
+	
+	free(errormsg);	
 	return 0;
 }

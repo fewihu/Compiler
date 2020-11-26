@@ -33,7 +33,7 @@ typedef struct BOGEN{
 		struct BOGEN* 	G;	//Graph
 	}BogenX;
 	
-	void (*funcPointer_int)(void);		//Aktion oder NULL
+	int (*funcPointer)(void);		//Aktion oder NULL
 	int nxtBogen;			//Index Folgebogen
 	int altBogen;			//Index Alternativbogen
 	 
