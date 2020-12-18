@@ -1,7 +1,8 @@
+//Felix Müller 18-041-61 
+//Parser PL0
+
 #ifndef SEMR_H
 #define SEMR_H
-
-//void initNameList();
 
 //Block
 int bl1();

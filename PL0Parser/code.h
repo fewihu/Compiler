@@ -1,3 +1,6 @@
+//Felix Müller 18-041-61 
+//Parser PL0
+
 typedef enum TCODE_0{
   
 	/*--- Kellerbefehle ---*/
