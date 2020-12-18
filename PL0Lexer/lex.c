@@ -168,37 +168,54 @@ static void gsl(void){
 //beenden
 static void b(void){
 	//Abbruchbedingung von lextest
+	
+	
 	char hIndex = 0;	
 	if(end == 1){ Morph.Val.Symb = -1; Morph.MC = mcSymb; return; }
+	
+	//printf("ZUSTAND AM ENDE %d\n", zustand);
 	switch(zustand){
-		case 3: // :
-		case 4: // <
-		case 5: // >
 		case 0: // beliebiges SZ (Klasse 0) oder =
 			Morph.Val.Symb = (int)*buf;
+			//printf("\t\t\t LEXER: Sonderzeichen %c\n",*buf);
 			Morph.MC = mcSymb;
 			break;
 		case 1: //Bezeichner			
 			Morph.Val.pStr = buf;
+			//printf("\t\t\t LEXER: Bezeichner 1 %s\n", buf);
 			Morph.MC = mcIdent;
 			break;
 		case 2: //Zahl
 			Morph.Val.Num	= atol(buf);
+			//printf("\t\t\t LEXER: Zahl %ld\n",Morph.Val.Num);
 			Morph.MC		= mcNum;
 			break;
+		case 3: // :
+			//printf("\t\t\t LEXER: :\n");
+			break;
+		case 4: // <
+			//printf("\t\t\t LEXER: <\n");
+			break;
+		case 5: // >
+			//printf("\t\t\t LEXER: >\n");
+			break;
 		case 6: //ergibt
+			//printf("\t\t\t LEXER: :=\n");
 			Morph.Val.Symb	= (long) zErg;
 			Morph.MC		= mcSymb;
 			break;
 		case 7: //lower or equal
+			//printf("\t\t\t LEXER: <=\n");
 			Morph.Val.Symb	= (long) zLE;
 			Morph.MC		= mcSymb;
 			break;
 		case 8: //greater or equal
+			//printf("\t\t\t LEXER: >=\n");
 			Morph.Val.Symb	= (long) zGE;
 			Morph.MC		= mcSymb;
 			break;
-		case 9: //Bezeichner			
+		case 9: //Bezeichner
+			//printf("\t\t\t LEXER: Bezeichner 2 %s\n", buf);			
 			Morph.Val.pStr = buf;
 			Morph.MC = mcIdent;
 			break;
@@ -207,6 +224,7 @@ static void b(void){
 			hIndex = getHIndex(buf);
 			//printf("%d\n", hIndex);
 			if(htkw[hIndex] == 0) {
+				//printf("\t\t\t LEXER: Bezeichner 3 %s\n", buf);	
 				Morph.MC = mcIdent;
 				Morph.Val.pStr = buf;
 				break;
@@ -214,15 +232,19 @@ static void b(void){
 			else{
 				//printf("BUF: %s, KW: %s\n",buf,cKw[htkw[hIndex]-1]);
 				if(strcmp(cKw[htkw[hIndex]-1], buf) == 0){
+					//printf("\t\t\t Schlüsselwort %s\n", cKw[htkw[hIndex]-1]);
 					Morph.MC = mcSymb;
 					Morph.Val.Symb = 130 + htkw[hIndex];
 					break;
 				}else{
+					//printf("\t\t\t LEXER: Bezeichner 4 %s\n", buf);	
 					Morph.MC = mcIdent;
 					Morph.Val.pStr = buf;
 					break;
 				}
 			}
+			break;
+		default: printf("\nWas für eine Scheiße\n");
 	}		
 	end++;
 }
@@ -261,6 +283,6 @@ tMorph* lex(void){
 		zustand = fZustand;
 		//printf("FZUSTAND:%d\n",fZustand);
 	}while(end == 0);
-		
+				
 	return &Morph;
 }

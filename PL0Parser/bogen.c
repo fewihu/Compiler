@@ -10,6 +10,8 @@
 #include "simpleList.h"
 #include "identDescr.h"
 #include "semRoutinen.h"
+#include "code.h"
+
 
 //in lex.c als extern definiert
 tMorph Morph={0};
@@ -17,6 +19,14 @@ tMorph Morph={0};
 extern procDescr* currProc;	//aktuell umgebende Prozedur
 extern long* constBlock;	//Konstantenblock
 extern int constBlockSize;	//Größe des Konstantenblocks
+extern int		codeLen;	//Codelänge
+
+extern entryProcCode actEPC;//struct das Informationen zum aktuellen EntryProc Code hält
+
+extern FILE* test;			//Ausgabedatei
+extern FILE* codeBuf;		//Zwischendatei für Code der akt. Proc
+
+
 
 tBogen gExpr[]; //muss in factor bekannt sein
 
@@ -32,8 +42,8 @@ tBogen gExpr[]; //muss in factor bekannt sein
 //	 '('      expr     '('
 
 tBogen gFact[]={
-	{BogenM, {(unsigned long) mcNum},   NULL, 5, 1},   	//0 mcIdent	(0-X) 
-	{BogenM, {(unsigned long) mcIdent}, NULL, 5, 2},	//1 mcNum   (0-X)
+	{BogenM, {(unsigned long) mcNum},	fa1 , 5, 1},   	//0 mcIdent	(0-X) 
+	{BogenM, {(unsigned long) mcIdent}, fa2 , 5, 2},	//1 mcNum   (0-X)
 	{BogenS, {(unsigned long) '('    }, NULL, 3, 0},	//2 '('     (0-1)
 	{BogenG, {(unsigned long) gExpr  }, NULL, 4, 0},	//3 expr    (1-2)
 	{BogenS, {(unsigned long) ')'    }, NULL, 5, 0},	//4 ')'     (2-X)
@@ -42,20 +52,23 @@ tBogen gFact[]={
 
 //==================================================
 //Term
-//	 
-//    factor      Nil
-// 0 --------> 1 -----> X
-//            / \
-// '*' or '/'/	 \ factor
-//			2----^
+//					 factor			'/'				
+//	              ------------- 4 <----
+//     factor    /                    |
+// 0 ---------> 1 ------------------> 2 --------> X
+//               \                    |
+//				  ^------------ 3 <----
+//					 factor	        '*'
 		
 tBogen gTerm[]={
 	{BogenG, {(unsigned long) gFact}, NULL, 1, 0},	//0 Factor	(0-1)	
-	{BogenS, {(unsigned long) '*'},   NULL, 4, 2},	//1 *		(1-2)
-	{BogenS, {(unsigned long) '/'},   NULL, 4, 3},	//2 /		(1-2)
-	{BogenN, {(unsigned long) 0},     NULL, 5, 0},	//3	Nil		(1-X)
-	{BogenG, {(unsigned long) gFact}, NULL, 1, 0},	//4 Factor	(2-1)
-	{BogenE, {(unsigned long) 0 },    NULL, 0, 0}	//X ENDE
+	{BogenN, {(unsigned long) 0},     NULL, 2, 0},	//1 Nil     (1-2)
+	{BogenS, {(unsigned long) '*'},   NULL, 3, 4},  //2 '*'     (2-3)
+	{BogenG, {(unsigned long) gFact}, te1 , 1, 0},	//3 Factor	(3-1)
+	{BogenS, {(unsigned long) '/'},   NULL, 5, 6},	//4 '/'		(2-4)
+	{BogenG, {(unsigned long) gFact}, te2 , 1, 0},  //5 Factor  (4-1)
+	{BogenN, {(unsigned long) 0},     NULL, 7, 0},	//6 Nil		(2-X)
+	{BogenE, {(unsigned long) 0},     NULL, 0, 0}	//X ENDE
 };
 
 //==================================================
@@ -69,6 +82,31 @@ tBogen gTerm[]={
 //   -----^				  \
 //	  '-'				   X
 
+//==================================================
+//Expression
+//
+//                             -------------------> 4 ---> X
+//				   term       /                    /|
+// 0 ---------> 1 ---------> 3 <-- term 5 <--'+'--/ |
+//  \	                    / \		                |
+//	 \--------> 2 ---------/   \-- term 6 <--'-'-----
+//		 '-'       term
+
+tBogen gExpr[]={
+	{BogenN, {(unsigned long) 0},		NULL, 1, 2},	//0 Nil	 (0-1)
+	{BogenG, {(unsigned long) gTerm}, 	NULL, 4, 0},	//1 TERM (1-3)
+	{BogenS, {(unsigned long) '-'}, 	NULL, 3, 0},	//2 -	 (0-2)
+	{BogenG, {(unsigned long) gTerm},	ex1 , 4, 0},	//3 TERM (2-3)
+	{BogenN, {(unsigned long) 0},		NULL, 5, 0},	//4 Nil	 (3-4)
+	{BogenS, {(unsigned long) '+'},		NULL, 8, 6},	//5 +    (4-5)
+	{BogenS, {(unsigned long) '-'},		NULL, 9, 7},	//6 -	 (4-6)
+	{BogenN, {(unsigned long) 0}, 		NULL,10, 0},	//7 Nil	 (4-X)
+	{BogenG, {(unsigned long) gTerm}, 	ex2 , 4, 0},	//8 Term (5-3)
+	{BogenG, {(unsigned long) gTerm}, 	ex3 , 4, 0},	//9 Term (6-3)
+	{BogenE, {(unsigned long) 0},		NULL, 0, 0}		//10 X ENDE	
+};
+
+/*
 tBogen gExpr[]={
 	{BogenS, {(unsigned long) '-'},   NULL, 2, 1}, //0 -	(0-1)
 	{BogenG, {(unsigned long) gTerm}, NULL, 3, 0}, //1 TERM (0-2)
@@ -79,7 +117,7 @@ tBogen gExpr[]={
 	{BogenG, {(unsigned long) gTerm}, NULL, 3, 0}, //6 TERM	(3-2)
 	{BogenG, {(unsigned long) gTerm}, NULL, 3, 0}, //7 TERM	(3-2)
 	{BogenE, {(unsigned long) 0},     NULL, 0, 0}  //8 X ENDE
-};
+};*/
 
 //==================================================
 //Condition
@@ -124,7 +162,7 @@ tBogen gCond[]={
 //                ^----';'-----    
 
 tBogen gStmt[]={
-	{BogenM, {(unsigned long) mcIdent}, NULL,  7, 1},	// 0  IDENT	(0-1)
+	{BogenM, {(unsigned long) mcIdent}, st1,  7, 1},	// 0  IDENT	(0-1)
 	{BogenS, {(unsigned long) zCLL},    NULL,  9, 2},	// 1  CALL	(0-4)
 	{BogenS, {(unsigned long) zBGN},    NULL, 10, 3},	// 2  BEGIN	(0-7)
 	{BogenS, {(unsigned long) zIF},     NULL, 13, 4},	// 3  IF	(0-2)
@@ -133,9 +171,9 @@ tBogen gStmt[]={
 	{BogenS, {(unsigned long) '!'},     NULL, 20, 0},	// 6  !		(0-5)
 	//=============================================================================
 	{BogenS, {(unsigned long) zErg},    NULL,  8, 0},	// 7  := für IDENT		(1-8)
-	{BogenG, {(unsigned long) gExpr},   NULL, 21, 0},	// 8  EXPR für IDENT	(8-X)
+	{BogenG, {(unsigned long) gExpr},   st2,  21, 0},	// 8  EXPR für IDENT	(8-X)
 	//=============================================================================						
-	{BogenM, {(unsigned long) mcIdent}, NULL, 21, 0},	// 9  IDENT für CALL	(4-X)
+	{BogenM, {(unsigned long) mcIdent}, st8 , 21, 0},	// 9  IDENT für CALL	(4-X)
 	//=============================================================================
 	{BogenG, {(unsigned long) gStmt},   NULL, 11, 0},	// 10 statement für BEGIN	(7-14)
 	{BogenS, {(unsigned long) ';'},     NULL, 10,12},	// 11 ';' trennt statements (14-7)
@@ -149,9 +187,9 @@ tBogen gStmt[]={
 	{BogenS, {(unsigned long) zDO},     NULL, 18, 0},	// 17 DO für WHILE			(10-16)
 	{BogenG, {(unsigned long) gStmt},   NULL, 21, 0},	// 18 statement für WHILE	(16-X)
 	//=============================================================================
-	{BogenM, {(unsigned long) mcIdent}, NULL, 21, 0},	// 19 IDENT für ?		(5-X)	
+	{BogenM, {(unsigned long) mcIdent}, st9, 21, 0},	// 19 IDENT für ?		(5-X)
 	//=============================================================================
-	{BogenG, {(unsigned long) gExpr},   NULL, 21, 0},	// 20 expression für !	(6-X)
+	{BogenG, {(unsigned long) gExpr},   st10, 21, 0},	// 20 expression für !	(6-X)
 	//=============================================================================
 	{BogenE, {(unsigned long) 0},		NULL,  0, 0}	// 21 X ENDE	
 };	
@@ -170,11 +208,13 @@ tBogen gStmt[]={
 // |            \             /|
 // |             ^----','----- |
 // |                           |
-// 8 <----------';'------------
-// |\
-// | ---PROCEDURE--> 9 ---IDENT--> 10 ---';'---> 11 ---BLOCK---> 12
-// |															 |
-// 13 <----------------------------------';'---------------------                                                             
+// 8<-  <-------- ';'-----------
+// |\ \
+// | | \<-------------------------------------------------';'--------
+// | |																 \
+// |  --PROCEDURE--> 9 ---IDENT--> 10 ---';'---> 11 ---BLOCK---> 12--/
+// |															 
+// 13                                                             
 // \
 //  --STATEMENT--> X
 //
@@ -195,19 +235,19 @@ tBogen gBlck[]={
 	{BogenS, {(unsigned long) ';'},     NULL,12, 0},	// 11 ; VAR -> PROCEDURE	(7-8)
 	// Ende vom VAR Teil -> PROCEDURE Teil
 	{BogenS, {(unsigned long) zPRC},    NULL,14,13},	// 12 PROCEDURE 			(8-9)
-	{BogenN, {(unsigned long) 0},       NULL,18, 0},	// 13 Nil zu STATEMENT		(8-13)
+	{BogenN, {(unsigned long) 0},       bl6 ,18, 0},	// 13 Nil zu STATEMENT		(8-13)
 	{BogenM, {(unsigned long) mcIdent}, bl4 ,15, 0},	// 14 IDENT für PROCEDURE	(9-10)
 	{BogenS, {(unsigned long) ';'},     NULL,16, 0},	// 15 ; schleißt PROC ab	(10-11)
 	{BogenG, {(unsigned long) gBlck},   NULL,17, 0},	// 16 block für PROCEDURE	(11-12)
-	{BogenS, {(unsigned long) ';'}, 	bl5 ,12, 0},	// 17 ; schließt block ab	(12-13)
+	{BogenS, {(unsigned long) ';'}, 	NULL,12, 0},	// 17 ; schließt block ab	(12-8)
 	// Ende vom PROCEDURE Teil -> statement Teil
-	{BogenG, {(unsigned long) gStmt},   NULL, 19, 0},	// 18 statement 			(13-X)
+	{BogenG, {(unsigned long) gStmt},   bl5, 19, 0},	// 18 statement 			(13-X)
 	{BogenE, {(unsigned long) 0},       NULL,  0, 0}	// 19 X ENDE
 };
 
 tBogen gProg[]={
 	{BogenG, {(unsigned long) gBlck}, NULL, 1, 0}, // 0 BLOCK	(0-1)
-	{BogenS, {(unsigned long) '.'},	  NULL, 2, 0}, // 1 .		(1-2)
+	{BogenS, {(unsigned long) '.'},	  pr1 , 2, 0}, // 1 .		(1-2)
 	{BogenE, {(unsigned long) 0},     NULL, 0, 0}  // 2 X ENDE 
 };
 
@@ -227,6 +267,9 @@ int parse(tBogen* pGraph){
 	if(Morph.MC == mcEmpty) lex();
 
 	while(1){
+			
+		
+		//printf("ConstBlockGröße aus parse: %d\n", constBlockSize);
 				
 		//passt gelesenes Symbol zu erwarteten Symbol?
 		switch(pBogenBuf->bt & (BogenN+BogenS+BogenM+BogenG+BogenE)){
@@ -245,12 +288,14 @@ int parse(tBogen* pGraph){
 				}
 			
 				ret = (Morph.Val.Symb == pBogenBuf->BogenX.S); 
+				//printf("Symbol: %d == %d = %d\n", Morph.Val.Symb, pBogenBuf->BogenX.S, ret);
 				break; 
 			case BogenM: 
 				//vorsorglich erwartetes Token an Fehlermeldung anhängen
 				strcat(errormsg, " | <Bezeichner>\n");
 			
-				ret = (Morph.MC == (tMC) pBogenBuf->BogenX.M);
+				ret = (Morph.MC == pBogenBuf->BogenX.M);
+				//printf("Morphem: %d == %d = %d\n", Morph.MC, pBogenBuf->BogenX.M, ret);
 				break;
 			case BogenG:
 				//neuer Bogen -> Fehlermeldung hinfällig				
@@ -266,14 +311,16 @@ int parse(tBogen* pGraph){
 		}
 		
 		//Semantikroutinen hier ausführen (Funktionspointer)
-		if(pBogenBuf->funcPointer != NULL) ret = pBogenBuf->funcPointer();
+		if(ret && (pBogenBuf->funcPointer != NULL)) ret = pBogenBuf->funcPointer();
 		
 		//kein Erfolg --> Alternative?
 		if(!ret){
 			
 			if(pBogenBuf->altBogen != 0){
 				//setze Alternativbogen	
+				//printf("alternative: %d\n",pBogenBuf->altBogen);
 				pBogenBuf = pGraph + pBogenBuf->altBogen;
+				
 			
 			}else{
 				//kein Alternativbogen verfügbar
@@ -286,14 +333,16 @@ int parse(tBogen* pGraph){
 			if(pBogenBuf->bt & BogenS || pBogenBuf->bt & BogenM) lex();
 			
 			//setze Folgebogen 
-			pBogenBuf = pGraph+pBogenBuf->nxtBogen;			
+			//printf("nächster: %d\n", pBogenBuf->nxtBogen);
+			pBogenBuf = pGraph+pBogenBuf->nxtBogen;		
+	
 		}
 	}
 }
 
 
 int main(int argc, char* argv[]){
-	
+		
 	//Hauptprogramm als aktuelle Prozedur festlegen
 	currProc = malloc(sizeof(procDescr));
 	currProc->idx 				= 0;
@@ -301,8 +350,15 @@ int main(int argc, char* argv[]){
 	currProc->localNameList		= malloc(sizeof(listHead));
 	currProc->memAllocCount		= 0;
 	
-	constBlockSize	= 0; 		//Größe des Konstantenblocks
+	//Größe des Konstantenblocks und Codelänge(akt. Proc) festlegen -> wächst dynamisch
+	constBlockSize	= 0;
+	codeLen 		= 0;
 	
+	//ersten 4 Bytes in Codeausgabe überspringen -> später mit Anzahl der Prozeduren überschreiben
+	test = fopen("test.cl0", "wb");
+	int dummy = 0;
+	fwrite(&dummy, sizeof(int), 1, test);
+		
 	errormsg = malloc(1024);
 	
 	if(argc > 1 && errormsg){
@@ -324,13 +380,34 @@ int main(int argc, char* argv[]){
 		}
 	}else return 1;
 	
-	printf("------------------------\nKonstantenblock:\n");
+	printf("DEBUG\n");
+	exit(0);
+	return 0;
+	/*printf("------------------------\nKonstantenblock:\n");
 	int i = 0;
 	while(i < constBlockSize){
 		printf("%ld\n", *(constBlock + (i * sizeof(long))));
 		i++;
-	}
+		printf("-");
+	}*/
+	
+
+	
+	//short arg = 1;
+	//char op = 0;
+	
+	//printf("%04x\n", arg);
+	//write2B_LE(arg, actCode);
+	
+	//actCode++;
+	//*actCode = '\0';
+	//fprintf(test, "%s", codeBase);
+	
+	//int ret = fclose(test);
+	//printf("ret: %d\n",ret);
 	
 	free(errormsg);	
+	
+
 	return 0;
 }
