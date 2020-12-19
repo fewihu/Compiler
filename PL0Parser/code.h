@@ -1,5 +1,6 @@
 //Felix Müller 18-041-61 
-//Parser PL0
+//Binärcodes PL0
+//übernommen von Prof A. Beck
 
 typedef enum TCODE_0{
   

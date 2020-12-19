@@ -1,5 +1,5 @@
 //Felix Müller 18-041-61 
-//Parser PL0
+//Semantikroutinen PL0
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -71,6 +71,44 @@ int searchVarLocal(char* varIdent, int* displ){
 			act = getNext(head);
 		}
 	}
+}
+
+int searchVarGlobal(char* varIdent, int* displ, int* procIdx){
+
+	procDescr*		actProc = currProc;
+	listHead*		head;
+	listElement*	act;
+	identDescr*		actDescr;
+	varDescr*		dataVar;
+	
+	while(1){
+	
+		head = actProc->localNameList;
+		
+		if(head->size > 0){
+			act = getFirst(head);
+			while(act != NULL){
+				actDescr = (identDescr*) act->data;
+				
+				if(actDescr->identType == identVar){
+					if(strcmp(actDescr->name, varIdent) == 0){
+						printf("\tHEUREKA\n");
+						dataVar = (varDescr*) actDescr->pObj;
+						*displ		= dataVar->displacement;
+						*procIdx	= actProc->idx;
+						return 1;
+					}
+				}
+				
+				act = getNext(head);
+			}
+		}
+		
+		if(actProc->idx == 0) break;
+		actProc = (procDescr*)actProc->prntProc;
+	}
+	
+	return 0;
 }
 
 int searchConstant(char* constIdent, int* index){
@@ -266,6 +304,52 @@ void writeCode_1(tCode_1 opCode, short arg1){
 	}
 }
 
+void writeCode_2(tCode_2 opCode, short arg1, short arg2){
+	
+	char bCode	= 0;
+	char arg	= 0;
+	
+	switch(opCode){
+		case puValVrGlob:
+			bCode = 2;
+			fwrite(&bCode, sizeof(char), 1, codeBuf);
+			
+			arg = (unsigned char) (arg1 & 0xff);
+			fwrite(&arg, sizeof(char), 1, codeBuf);
+			arg = (unsigned char) (arg1 >> 8);
+			fwrite(&arg, sizeof(char), 1, codeBuf);
+			
+			arg = (unsigned char) (arg2 & 0xff);
+			fwrite(&arg, sizeof(char), 1, codeBuf);
+			arg = (unsigned char) (arg2 >> 8);
+			fwrite(&arg, sizeof(char), 1, codeBuf);
+			
+			codeLen += 5;
+			break;
+		
+		case puAdrVrGlob: 
+			bCode = 5;
+			
+			fwrite(&bCode, sizeof(char), 1, codeBuf);
+			
+			arg = (unsigned char) (arg1 & 0xff);
+			fwrite(&arg, sizeof(char), 1, codeBuf);
+			arg = (unsigned char) (arg1 >> 8);
+			fwrite(&arg, sizeof(char), 1, codeBuf);
+			
+			arg = (unsigned char) (arg2 & 0xff);
+			fwrite(&arg, sizeof(char), 1, codeBuf);
+			arg = (unsigned char) (arg2 >> 8);
+			fwrite(&arg, sizeof(char), 1, codeBuf);
+			
+			codeLen += 5;
+			break;
+			
+		
+		default: break;
+	}
+}
+
 void writeEPC(short arg1, short arg2, short arg3){
 	
 	char entryProc = 26;
@@ -289,7 +373,6 @@ void writeEPC(short arg1, short arg2, short arg3){
 	fwrite(&arg, sizeof(char), 1, test);
 }
 
-
 int bl1(){ // --ident-->  (const)
 
 	printf("bl1 erreicht\n\tsuche Konstantenbezeichner in lokaler Namensliste\n");
@@ -303,7 +386,8 @@ int bl1(){ // --ident-->  (const)
 			printf("\tKonstante %s akzeptiert\n", Morph.Val.pStr);		
 			return 1;
 	}else{
-		printf("Semantikfehler: Konstantenbezeichner %s bereits vergeben", Morph.Val.pStr);
+		printf("Semantikfehler: Konstantenbezeichner %s bereits vergeben (Zeile %d, Spalte %d)\n", 
+			Morph.Val.pStr, Morph.posLine, Morph.posCol);
 		exit(1);			
 	}
 }
@@ -334,7 +418,7 @@ int bl2(){ // --mcNum--> (Wert für const)
 		long* newConstBlock = (long*) realloc(constBlock, (constBlockSize + 1) * sizeof(long));
 		
 		if (newConstBlock) constBlock = newConstBlock;
-		else{printf("kein Speicher :("); exit(-1);}
+		else{printf("kein Speicher :(\n"); exit(-1);}
 		
 		if(constBlock){
 			
@@ -361,7 +445,7 @@ int bl2(){ // --mcNum--> (Wert für const)
 
 int bl3(){ // --ident--> (var)
 	
-	printf("bl3 erreicht\n\tsuche Variablenbezeichner in lokaler Namensliste");
+	printf("bl3 erreicht\n\tsuche Variablenbezeichner in lokaler Namensliste\n");
 	
 	//wenn prozedurlokale Suche nach Bezeichner ok, dann 
 	//lege Bezeichnerdaten und Variablenbeschreibung an		
@@ -377,7 +461,8 @@ int bl3(){ // --ident--> (var)
 			printf("\tVariable %s akzeptiert\n", Morph.Val.pStr);
 			return 1;
 	}else{
-		printf("Semantikfehler: Variablenbezeichner %s bereits vergeben", Morph.Val.pStr);
+		printf("Semantikfehler: Variablenbezeichner %s bereits vergeben (Zeile %d, Spalte %d)\n", 
+			Morph.Val.pStr, Morph.posLine, Morph.posCol);
 		exit(1);
 	}
 }
@@ -385,7 +470,7 @@ int bl3(){ // --ident--> (var)
 
 int bl4(){ // --ident--> (procedure)
 	
-	printf("bl4 erreicht\n\tsuche Prozedurbezeichner in lokaler Namensliste");
+	printf("bl4 erreicht\n\tsuche Prozedurbezeichner in lokaler Namensliste\n");
 	
 	//wenn prozedurlokale Suche nach Bezeichner ok, dann 
 	//lege Bezeichnerdaten an, Prozedurbeschreibung in bl5
@@ -400,12 +485,12 @@ int bl4(){ // --ident--> (procedure)
 		
 		//globale Variablen setzen
 		currProc				= newProc;	//umgebende Proc ist neue Proc
-		//procIdx++;	
 		
 		printf("\tProzedurbezeichner %s akzeptiert\n", Morph.Val.pStr);
 		return 1;
 	}else{
-		printf("Semantikfehler: Prozedurbezeichner %s bereits vergeben", Morph.Val.pStr);
+		printf("Semantikfehler: Prozedurbezeichner %s bereits vergeben (Zeile %d, Spalte %d)\n", 
+			Morph.Val.pStr, Morph.posLine, Morph.posCol);
 	}
 }
 
@@ -427,7 +512,7 @@ int bl5(){ // --;--> (schließt Block von procedure ab)
 					printf("    Variable: %s\n",((identDescr*)act->data)->name);
 					break;
 				case identConst:
-					printf("    Const: %s", ((identDescr*)act->data)->name );
+					printf("    Const: %s\n", ((identDescr*)act->data)->name );
 					printf(", Wert:  %ld\n", *(constBlock + (((constDescr*)((identDescr*)act->data)->pObj)->idx) * sizeof(long)));
 					break;
 			}
@@ -455,7 +540,7 @@ int bl5(){ // --;--> (schließt Block von procedure ab)
 	printf("\tschließe Buffer und öffne ihn zum lesen %d\n",ret);
 	
 	if(codeBuf == NULL){
-		printf("Kein Speicher (codeBuf) :(");
+		printf("Kein Speicher (codeBuf) :(\n");
 		exit(1);	
 	}
 	
@@ -482,7 +567,7 @@ int bl5(){ // --;--> (schließt Block von procedure ab)
 
 
 
-int bl6(){
+int bl6(){ //Block für neue Prozedur beginnt
 	
 	printf("bl6 erreicht\n\töffne Datei codeBuf\n");
 		
@@ -499,7 +584,7 @@ int bl6(){
 	return 1;
 }
 
-int fa1(){
+int fa1(){ //mcNum (Direktkonstante)
 
 	printf("fa1 erreicht\n\tsuche Konstantenwert in constBlock %d\n", constBlockSize);
 	
@@ -547,12 +632,13 @@ int fa1(){
 	return 1;
 }
 
-int fa2(){
+int fa2(){ //mcIdent (Konstante oder Variable)
 
 	printf("fa2 erreicht %d\n", Morph.MC);
 	
 	int index;
 	int displ;
+	int procIdx;
 	
 	int ret = searchConstant(Morph.Val.pStr, &index);
 	if(ret){
@@ -568,33 +654,52 @@ int fa2(){
 		return 1;
 	}
 	
-	return 0;
+	//neu
+	ret = searchVarGlobal(Morph.Val.pStr, &displ, &procIdx);
+	if(ret){
+		writeCode_2(puValVrGlob, displ, procIdx);
+		printf("\tBezeichner ist globale Variable, schreibe puValVrGlob\n");
+		return 1;
+	}
+	
+	printf("Bezeichner %s ist nicht definiert (Zeile %d, Spalte %d)\n", 
+		Morph.Val.pStr, Morph.posLine, Morph.posCol);
 }
 
-int st1(){
+int st1(){ //Ident für Zuweisung (Adresse wird auf Stack gepusht)
 	printf("st1 erreicht\n");
 	
 	int displ;
+	int procIdx;
 	int ret = searchVarLocal(Morph.Val.pStr, &displ);
 	if(ret){
 		printf("\tVariablenbezeichner gefunden, schreibe puAdrVrLocl\n");
 		writeCode_1(puAdrVrLocl, displ);
 		return 1;
-	}else{
-		printf("Semantikfehler: Variablenbezeichner %s nicht vereinbart\n", Morph.Val.pStr);
-		exit(1);
 	}
-
+	
+	ret = searchVarGlobal(Morph.Val.pStr, &displ, &procIdx);
+	if(ret){
+		printf("\tVariablenbezeichner gefunden, schreibe puAdrVrGlob\n");
+		writeCode_2(puAdrVrGlob, displ, procIdx);
+		return 1;	
+	}
+		
+	printf("Semantikfehler: Variablenbezeichner %s nicht vereinbart (Zeile %d, Spalte %d)\n", 
+		Morph.Val.pStr, Morph.posLine, Morph.posCol);
+	exit(1);
 }
 
-int st2(){
+int st2(){ //expr für Ident (Zuweisung)
+
 	printf("st2 erreicht, schreibe storeVal in Buffer\n");
 		
 	writeCode_0(storeVal);
 	return 1;
 }
 
-int st8(){
+int st8(){ //procIdent für call
+
 	printf("st8 erreicht\n");
 	int procIdx;
 	int ret = searchProc(Morph.Val.pStr, &procIdx);
@@ -602,28 +707,41 @@ int st8(){
 		printf("\tProzedur gefunden, schreibe call\n");
 		writeCode_1(call, procIdx);
 		return 1;
-	}else{
-		printf("Semantikfehler: Prozedurbezeichner %s nicht vereinbart\n", Morph.Val.pStr);
-		exit(1);
 	}
+	
+	printf("Semantikfehler: Prozedurbezeichner %s nicht vereinbart (Zeile %d, Spalte %d)\n"
+		, Morph.Val.pStr, Morph.posLine, Morph.posCol);
+	exit(1);
 }
 
-int st9(){
+int st9(){ // ident für ? (Adresse wird gepusht)
 	printf("st9 erreicht\n");
+	
 	int displ;
+	int procIdx;
+	
 	int ret = searchVarLocal(Morph.Val.pStr, &displ);
 	if(ret){
 		printf("\tVariablenbezeichner gefunden, schreibe puAdrVrLocl und getVal\n");
 		writeCode_1(puAdrVrLocl, displ);
 		writeCode_0(getVal);
 		return 1;
-	}else{
-		printf("Semantikfehler: Variablenbezeichner %s nicht vereinbart\n", Morph.Val.pStr);
-		exit(1);
 	}
+	
+	ret = searchVarGlobal(Morph.Val.pStr, &displ, &procIdx);
+	if(ret){
+		printf("\tVariablenbezeichner gefunden, schreibe puAdrVrGlob\n");
+		writeCode_2(puAdrVrGlob, displ, procIdx);
+		writeCode_0(getVal);
+		return 1;
+	}
+	
+	printf("Semantikfehler: Variablenbezeichner %s nicht vereinbart (Zeile %d, Spalte %d)\n"
+		, Morph.Val.pStr, Morph.posLine, Morph.posCol);
+	exit(1);
 }
 
-int st10(){
+int st10(){ //Expression für ! (Wert steht auf Stack) 
 
 	printf("st10 erreicht\n\tschreibe putVal in Buffer\n");
 
@@ -652,17 +770,14 @@ int pr1(){
 		i++;
 	}
 	
-	//schreibe die Anzahl Proceduren in die ersten 4 Bytes
-	//fseek(test, 0, SEEK_SET);
-	//int ret = fclose(test);
 	printf("\trewind Ausgabe\n");
-	//test = fopen("test.cl0","wb+");
 	rewind(test);
 	if(test == NULL){ 
-		printf("Kein Speicher (Ausgabedatei) :(");
+		printf("Kein Speicher (Ausgabedatei) :(\n");
 		exit(1);	
 	}
 	
+	//schreibe Anzahl Prozeduren in die ersten 4 Bytes der Ausgabe
 	arg = procIdx & 0xffffffffffffff; 		fwrite(&arg, sizeof(char), 1, test);
 	arg = (procIdx >> 8) & 0xffffffffffff;	fwrite(&arg, sizeof(char), 1, test);		
 	arg = (procIdx >> 16) & 0xffffffffff;	fwrite(&arg, sizeof(char), 1, test);
@@ -712,6 +827,7 @@ int te2(){
 	return 1;	
 }
 
+//Testfunktion
 int kawup(){
 	printf("steige in Ausdruck ab\n");
 	return 1;

@@ -1,8 +1,9 @@
 //Felix Müller 18-041-61 
-//Parser PL0
+//Semantikroutinen PL0
 
 #ifndef SEMR_H
 #define SEMR_H
+
 
 //Block
 int bl1();

@@ -12,7 +12,6 @@
 #include "semRoutinen.h"
 #include "code.h"
 
-
 //in lex.c als extern definiert
 tMorph Morph={0};
 
@@ -25,8 +24,6 @@ extern entryProcCode actEPC;//struct das Informationen zum aktuellen EntryProc C
 
 extern FILE* test;			//Ausgabedatei
 extern FILE* codeBuf;		//Zwischendatei für Code der akt. Proc
-
-
 
 tBogen gExpr[]; //muss in factor bekannt sein
 
@@ -42,8 +39,8 @@ tBogen gExpr[]; //muss in factor bekannt sein
 //	 '('      expr     '('
 
 tBogen gFact[]={
-	{BogenM, {(unsigned long) mcNum},	fa1 , 5, 1},   	//0 mcIdent	(0-X) 
-	{BogenM, {(unsigned long) mcIdent}, fa2 , 5, 2},	//1 mcNum   (0-X)
+	{BogenM, {(unsigned long) mcNum},	fa1 , 5, 1},   	//0 mcNum	(0-X) 
+	{BogenM, {(unsigned long) mcIdent}, fa2 , 5, 2},	//1 mcIdent (0-X)
 	{BogenS, {(unsigned long) '('    }, NULL, 3, 0},	//2 '('     (0-1)
 	{BogenG, {(unsigned long) gExpr  }, NULL, 4, 0},	//3 expr    (1-2)
 	{BogenS, {(unsigned long) ')'    }, NULL, 5, 0},	//4 ')'     (2-X)
@@ -73,17 +70,6 @@ tBogen gTerm[]={
 
 //==================================================
 //Expression
-//							   term
-//	  				       --------------
-//   ---------term-----   /	     		 \
-//  /      \           \ / '+' or '-'    /
-// 0 -Nil-> 1 --term--> 2 ------------> 3
-//  \      /			 \ Nil
-//   -----^				  \
-//	  '-'				   X
-
-//==================================================
-//Expression
 //
 //                             -------------------> 4 ---> X
 //				   term       /                    /|
@@ -105,19 +91,6 @@ tBogen gExpr[]={
 	{BogenG, {(unsigned long) gTerm}, 	ex3 , 4, 0},	//9 Term (6-3)
 	{BogenE, {(unsigned long) 0},		NULL, 0, 0}		//10 X ENDE	
 };
-
-/*
-tBogen gExpr[]={
-	{BogenS, {(unsigned long) '-'},   NULL, 2, 1}, //0 -	(0-1)
-	{BogenG, {(unsigned long) gTerm}, NULL, 3, 0}, //1 TERM (0-2)
-	{BogenG, {(unsigned long) gTerm}, NULL, 3, 0}, //2 TERM (1-2)
-	{BogenS, {(unsigned long) '+'},   NULL, 6, 4}, //3 +	(2-3)
-	{BogenS, {(unsigned long) '-'},   NULL, 7, 5}, //4 - 	(2-3)
-	{BogenN, {(unsigned long) 0},     NULL, 8, 0}, //5 Nil	(2-X)
-	{BogenG, {(unsigned long) gTerm}, NULL, 3, 0}, //6 TERM	(3-2)
-	{BogenG, {(unsigned long) gTerm}, NULL, 3, 0}, //7 TERM	(3-2)
-	{BogenE, {(unsigned long) 0},     NULL, 0, 0}  //8 X ENDE
-};*/
 
 //==================================================
 //Condition
@@ -267,10 +240,7 @@ int parse(tBogen* pGraph){
 	if(Morph.MC == mcEmpty) lex();
 
 	while(1){
-			
-		
-		//printf("ConstBlockGröße aus parse: %d\n", constBlockSize);
-				
+						
 		//passt gelesenes Symbol zu erwarteten Symbol?
 		switch(pBogenBuf->bt & (BogenN+BogenS+BogenM+BogenG+BogenE)){
 			
@@ -288,19 +258,15 @@ int parse(tBogen* pGraph){
 				}
 			
 				ret = (Morph.Val.Symb == pBogenBuf->BogenX.S); 
-				//printf("Symbol: %d == %d = %d\n", Morph.Val.Symb, pBogenBuf->BogenX.S, ret);
 				break; 
 			case BogenM: 
 				//vorsorglich erwartetes Token an Fehlermeldung anhängen
 				strcat(errormsg, " | <Bezeichner>\n");
-			
 				ret = (Morph.MC == pBogenBuf->BogenX.M);
-				//printf("Morphem: %d == %d = %d\n", Morph.MC, pBogenBuf->BogenX.M, ret);
 				break;
 			case BogenG:
 				//neuer Bogen -> Fehlermeldung hinfällig				
 				strcpy(errormsg, "\0");
-				
 				ret = parse(pBogenBuf->BogenX.G);
 				break;
 			case BogenE:
@@ -333,13 +299,10 @@ int parse(tBogen* pGraph){
 			if(pBogenBuf->bt & BogenS || pBogenBuf->bt & BogenM) lex();
 			
 			//setze Folgebogen 
-			//printf("nächster: %d\n", pBogenBuf->nxtBogen);
 			pBogenBuf = pGraph+pBogenBuf->nxtBogen;		
-	
 		}
 	}
 }
-
 
 int main(int argc, char* argv[]){
 		
@@ -380,34 +343,6 @@ int main(int argc, char* argv[]){
 		}
 	}else return 1;
 	
-	printf("DEBUG\n");
-	exit(0);
-	return 0;
-	/*printf("------------------------\nKonstantenblock:\n");
-	int i = 0;
-	while(i < constBlockSize){
-		printf("%ld\n", *(constBlock + (i * sizeof(long))));
-		i++;
-		printf("-");
-	}*/
-	
-
-	
-	//short arg = 1;
-	//char op = 0;
-	
-	//printf("%04x\n", arg);
-	//write2B_LE(arg, actCode);
-	
-	//actCode++;
-	//*actCode = '\0';
-	//fprintf(test, "%s", codeBase);
-	
-	//int ret = fclose(test);
-	//printf("ret: %d\n",ret);
-	
 	free(errormsg);	
-	
-
 	return 0;
 }

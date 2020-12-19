@@ -1,5 +1,5 @@
 //Felix Müller 18-041-61 
-//Parser PL0
+//Liste PL0
 
 #include <stdlib.h>
 #include <stdio.h>
