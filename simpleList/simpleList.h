@@ -25,4 +25,7 @@ listElement* createElement(void*);
 listElement* getCurr(listHead*);
 void deleteList(listHead*);	
 
+int insertFrst(listElement*, listHead*);
+listElement* popFrst(listHead*);
+
 #endif

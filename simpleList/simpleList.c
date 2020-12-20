@@ -31,6 +31,35 @@ int insert(listElement* newElement, listHead* head){
 	}else return 0;
 }
 
+int insertFrst(listElement* newElement, listHead* head){
+	
+	if((newElement != NULL) && (head != NULL)){
+		if(head->size == 0){
+			head->frst = newElement;
+			head->curr = newElement;
+			head->last = newElement;
+			head->size++;
+		}else{
+			newElement->nxtElement = head->frst;
+			head->frst = newElement;
+			head->curr = newElement;
+			head->size++;
+		}
+		return 1;
+	}else return 0;
+}
+
+listElement* popFrst(listHead* head){
+	
+	if((head != NULL) && (head->size > 0)){
+		listElement* toPop = head->frst;
+		head->frst = head->frst->nxtElement;
+		head->curr = head->frst;
+		head->size--;
+		return toPop;
+	}else return NULL;
+}
+
 listElement* getFirst(listHead* head){
 	if(head->size > 0){
 		head->curr = head->frst;

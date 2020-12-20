@@ -23,6 +23,7 @@ long* constBlock;		// -"-
 int constBlockSize;		// -"-
 int		codeLen;		// -"-
 entryProcCode actEPC;	// -"-
+listHead* lablList;		// -"-
 
 FILE* test;				//Ausgabedatei
 FILE* codeBuf;			//Zwischendatei (Code der aktuellen Prozedur)
@@ -242,6 +243,12 @@ void writeCode_0(tCode_0 opCode){
 			bCode = 9;
 			fwrite(&bCode, sizeof(char), 1, codeBuf);
 			codeLen++;
+			break;
+		
+		case odd: 
+			bCode = 11;
+			fwrite(&bCode, sizeof(char), 1, codeBuf);
+			codeLen++;
 			break;	
 		
 		default: break;
@@ -290,6 +297,18 @@ void writeCode_1(tCode_1 opCode, short arg1){
 			break;
 		case call:
 			bCode = 22;
+			fwrite(&bCode, sizeof(char), 1, codeBuf);
+			
+			arg = (unsigned char) (arg1 & 0xff);
+			fwrite(&arg, sizeof(char), 1, codeBuf);
+			arg = (unsigned char) (arg1 >> 8);
+			fwrite(&arg, sizeof(char), 1, codeBuf);
+			
+			codeLen += 3;
+			break;
+			
+		case jnot:
+			bCode = 25;
 			fwrite(&bCode, sizeof(char), 1, codeBuf);
 			
 			arg = (unsigned char) (arg1 & 0xff);
@@ -371,6 +390,13 @@ void writeEPC(short arg1, short arg2, short arg3){
 	fwrite(&arg, sizeof(char), 1, test);
 	arg = (unsigned char) (arg3 >> 8);
 	fwrite(&arg, sizeof(char), 1, test);
+}
+
+int co1(){
+	
+	printf("co1 erreicht\n\tschreibe odd in Buffer\n");
+	writeCode_0(odd);
+	return 1;
 }
 
 int bl1(){ // --ident-->  (const)
@@ -554,7 +580,7 @@ int bl5(){ // --;--> (schließt Block von procedure ab)
 
 	//schließe und lösche Puffer
 	ret = fclose(codeBuf);
-	remove("codeBuf");
+	//remove("codeBuf");
 	printf("\tschließe Buffer %d und lösche die Datei\n", ret);
 	
 	//lokale Namensliste nicht mehr gebraucht, übergeordnete wird umgebende Prozedur
@@ -577,7 +603,7 @@ int bl6(){ //Block für neue Prozedur beginnt
 	actEPC.IdxProc	= currProc->idx;
 	actEPC.VarLen	= currProc->memAllocCount;
 	
-	codeBuf = fopen("codeBuf","ab");
+	codeBuf = fopen("codeBuf","wb");
 	printf("\terrno: %d\n", errno);
 	if(codeBuf == NULL)	printf("bl6 Dateifehler\n");
 	
@@ -696,6 +722,54 @@ int st2(){ //expr für Ident (Zuweisung)
 		
 	writeCode_0(storeVal);
 	return 1;
+}
+
+int st3(){
+	
+	printf("st3 erreicht\n");
+	printf("\nCodelänge vor jnot %d\n", codeLen);
+	
+	
+	short* relAdr	= malloc(sizeof(short));
+//aktueller Bufferindex + Platz für jnot und Parameter
+	*relAdr			= codeLen;
+	
+	listElement* newElement = malloc(sizeof(listElement));
+	newElement->data		= relAdr;
+	
+	insertFrst(newElement, lablList);
+	
+	writeCode_1(jnot, 0); 
+	return 1;
+}
+
+int st4(){
+
+	printf("st4 erreicht\n");
+
+	listElement* label = popFrst(lablList);
+	short* relAdr = (short*) label->data;
+	short x = *relAdr;
+	if(label){
+		short lenCondBlck = ((short)(codeLen)) - x - 3;
+		
+		printf("\tSpringe zu Byte %d\n", x);
+		
+		int ret = fseek(codeBuf, x+1, SEEK_SET);
+		printf("SEEK: %d\n",ret);
+		
+		printf("\tRelativadresse beträgt %d\n", lenCondBlck);
+		
+		char arg;
+		
+		arg = (unsigned char) (lenCondBlck & 0xff);
+		fwrite(&arg, sizeof(char), 1, codeBuf);
+		arg = (unsigned char) (lenCondBlck >> 8);
+		fwrite(&arg, sizeof(char), 1, codeBuf);
+		
+		fseek(codeBuf, 0, SEEK_END);
+		return 1;
+	}else return 0;
 }
 
 int st8(){ //procIdent für call

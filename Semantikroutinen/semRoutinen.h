@@ -20,6 +20,8 @@ int fa2();
 //Statement
 int st1();
 int st2();
+int st3();
+int st4();
 
 int st8();
 int st9();
@@ -36,6 +38,9 @@ int ex3();
 //Term
 int te1();
 int te2();
+
+//condition
+int co1();
 
 //Test
 int kawup();

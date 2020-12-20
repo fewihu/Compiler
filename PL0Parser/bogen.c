@@ -22,6 +22,8 @@ extern int		codeLen;	//Codelänge
 
 extern entryProcCode actEPC;//struct das Informationen zum aktuellen EntryProc Code hält
 
+extern listHead* lablList;	//Liste mit Labeln für Sprünge
+
 extern FILE* test;			//Ausgabedatei
 extern FILE* codeBuf;		//Zwischendatei für Code der akt. Proc
 
@@ -104,7 +106,7 @@ tBogen gExpr[]={
 tBogen gCond[]={
 	{BogenS, {(unsigned long) zODD},  NULL, 2, 1},	//0 ODD		(0-1)	
 	{BogenG, {(unsigned long) gExpr}, NULL, 3, 0},	//1 Expr	(0-2)
-	{BogenG, {(unsigned long) gExpr}, NULL, 10,0},	//2 Expr	(1-X)
+	{BogenG, {(unsigned long) gExpr}, co1 , 10,0},	//2 Expr	(1-X)
 	{BogenS, {(unsigned long) '='},   NULL, 9, 4},	//3 =		(2-3)
 	{BogenS, {(unsigned long) '#'},   NULL, 9, 5},	//4 #		(2-3)
 	{BogenS, {(unsigned long) '<'},   NULL, 9, 6},	//5 <		(2-3)
@@ -152,9 +154,9 @@ tBogen gStmt[]={
 	{BogenS, {(unsigned long) ';'},     NULL, 10,12},	// 11 ';' trennt statements (14-7)
 	{BogenS, {(unsigned long) zEND},    NULL, 21, 0},	// 12 END zu BEGIN			(14-X)
 	//=============================================================================
-	{BogenG, {(unsigned long) gCond},   NULL, 14, 0},	// 13 condition für IF	(2-9)
+	{BogenG, {(unsigned long) gCond},   st3 , 14, 0},	// 13 condition für IF	(2-9)
 	{BogenS, {(unsigned long) zTHN},    NULL, 15, 0},	// 14 THEN für IF		(9-15)
-	{BogenG, {(unsigned long) gStmt},   NULL, 21, 0},	// 15 statement für IF	(15-X)
+	{BogenG, {(unsigned long) gStmt},   st4 , 21, 0},	// 15 statement für IF	(15-X)
 	//=============================================================================
 	{BogenG, {(unsigned long) gCond},   NULL, 17, 0},	// 16 condition für WHILE	(3-10)
 	{BogenS, {(unsigned long) zDO},     NULL, 18, 0},	// 17 DO für WHILE			(10-16)
@@ -312,6 +314,9 @@ int main(int argc, char* argv[]){
 	currProc->prntProc			= NULL;
 	currProc->localNameList		= malloc(sizeof(listHead));
 	currProc->memAllocCount		= 0;
+	
+	//Lableliste einrichten
+	lablList = malloc(sizeof(listHead));
 	
 	//Größe des Konstantenblocks und Codelänge(akt. Proc) festlegen -> wächst dynamisch
 	constBlockSize	= 0;
