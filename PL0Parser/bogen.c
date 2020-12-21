@@ -24,6 +24,8 @@ extern entryProcCode actEPC;//struct das Informationen zum aktuellen EntryProc C
 
 extern listHead* lablList;	//Liste mit Labeln für Sprünge
 
+extern short condCode;
+
 extern FILE* test;			//Ausgabedatei
 extern FILE* codeBuf;		//Zwischendatei für Code der akt. Proc
 
@@ -106,14 +108,14 @@ tBogen gExpr[]={
 tBogen gCond[]={
 	{BogenS, {(unsigned long) zODD},  NULL, 2, 1},	//0 ODD		(0-1)	
 	{BogenG, {(unsigned long) gExpr}, NULL, 3, 0},	//1 Expr	(0-2)
-	{BogenG, {(unsigned long) gExpr}, co1 , 10,0},	//2 Expr	(1-X)
-	{BogenS, {(unsigned long) '='},   NULL, 9, 4},	//3 =		(2-3)
-	{BogenS, {(unsigned long) '#'},   NULL, 9, 5},	//4 #		(2-3)
-	{BogenS, {(unsigned long) '<'},   NULL, 9, 6},	//5 <		(2-3)
-	{BogenS, {(unsigned long) '>'},   NULL, 9, 7},	//6 >		(2-3)
-	{BogenS, {(unsigned long) zLE},   NULL, 9, 8},	//7 <=		(2-3)
-	{BogenS, {(unsigned long) zGE},   NULL, 9, 0},	//8 >=		(2-3)
-	{BogenG, {(unsigned long) gExpr}, NULL,10, 0},	//9 Expr	(3-X)
+	{BogenG, {(unsigned long) gExpr}, co1 ,10, 0},	//2 Expr	(1-X)
+	{BogenS, {(unsigned long) '='},   co2 , 9, 4},	//3 =		(2-3)
+	{BogenS, {(unsigned long) '#'},   co3 , 9, 5},	//4 #		(2-3)
+	{BogenS, {(unsigned long) '<'},   co4 , 9, 6},	//5 <		(2-3)
+	{BogenS, {(unsigned long) '>'},   co5 , 9, 7},	//6 >		(2-3)
+	{BogenS, {(unsigned long) zLE},   co6 , 9, 8},	//7 <=		(2-3)
+	{BogenS, {(unsigned long) zGE},   co7 , 9, 0},	//8 >=		(2-3)
+	{BogenG, {(unsigned long) gExpr}, co8 ,10, 0},	//9 Expr	(3-X)
 	{BogenE, {(unsigned long) 0},     NULL, 0, 0}	//X ENDE
 };
 

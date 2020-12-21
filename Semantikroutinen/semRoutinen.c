@@ -24,6 +24,7 @@ int constBlockSize;		// -"-
 int		codeLen;		// -"-
 entryProcCode actEPC;	// -"-
 listHead* lablList;		// -"-
+short condCode;			// -"-
 
 FILE* test;				//Ausgabedatei
 FILE* codeBuf;			//Zwischendatei (Code der aktuellen Prozedur)
@@ -250,7 +251,43 @@ void writeCode_0(tCode_0 opCode){
 			fwrite(&bCode, sizeof(char), 1, codeBuf);
 			codeLen++;
 			break;	
+			
+		case cmpEQ:
+			bCode = 16;
+			fwrite(&bCode, sizeof(char), 1, codeBuf);
+			codeLen++;
+			break;
 		
+		case cmpNE:
+			bCode = 17;
+			fwrite(&bCode, sizeof(char), 1, codeBuf);
+			codeLen++;
+			break;
+			
+		case cmpLT:
+			bCode = 18;
+			fwrite(&bCode, sizeof(char), 1, codeBuf);
+			codeLen++;
+			break;
+			
+		case cmpGT:
+			bCode = 19;
+			fwrite(&bCode, sizeof(char), 1, codeBuf);
+			codeLen++;
+			break;
+			
+		case cmpLE:
+			bCode = 20;
+			fwrite(&bCode, sizeof(char), 1, codeBuf);
+			codeLen++;
+			break;
+			
+		case cmpGE:
+			bCode = 21;
+			fwrite(&bCode, sizeof(char), 1, codeBuf);
+			codeLen++;
+			break;		
+			
 		default: break;
 	}
 }
@@ -392,10 +429,59 @@ void writeEPC(short arg1, short arg2, short arg3){
 	fwrite(&arg, sizeof(char), 1, test);
 }
 
-int co1(){
+int co1(){ //odd
 	
 	printf("co1 erreicht\n\tschreibe odd in Buffer\n");
 	writeCode_0(odd);
+	return 1;
+}
+
+int co2(){ //=
+
+	printf("co2 erreicht\n\tcmpEQ wird gepuffert\n");
+	condCode = cmpEQ;
+	return 1;
+}
+
+int co3(){ //#
+
+	printf("co3 erreicht\n\tcmpNE wird gepuffert\n");
+	condCode = cmpNE;
+	return 1;
+}
+
+int co4(){ //<
+
+	printf("co4 erreicht\n\tcmpLT wird gepuffert\n");
+	condCode = cmpLT;
+	return 1;
+}
+
+int co5(){ //>
+
+	printf("co5 erreicht\n\tcmpGT wird gepuffert\n");
+	condCode = cmpGT;
+	return 1;
+}
+
+int co6(){ //<=
+
+	printf("co6 erreicht\n\tcmpLE wird gepuffert\n");
+	condCode = cmpLE;
+	return 1;
+}
+
+int co7(){ //>=
+
+	printf("co7 erreicht\n\tcmpGE wird gepuffert\n");
+	condCode = cmpGE;
+	return 1;
+}
+
+int co8(){
+	
+	printf("co8 erreicht\n\tgepufferter Code wird geschrieben\n");
+	writeCode_0(condCode);
 	return 1;
 }
 
