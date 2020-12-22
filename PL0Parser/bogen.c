@@ -143,7 +143,7 @@ tBogen gStmt[]={
 	{BogenS, {(unsigned long) zCLL},    NULL,  9, 2},	// 1  CALL	(0-4)
 	{BogenS, {(unsigned long) zBGN},    NULL, 10, 3},	// 2  BEGIN	(0-7)
 	{BogenS, {(unsigned long) zIF},     NULL, 13, 4},	// 3  IF	(0-2)
-	{BogenS, {(unsigned long) zWHL},    NULL, 16, 5},	// 4  WHILE	(0-3)
+	{BogenS, {(unsigned long) zWHL},    st5 , 16, 5},	// 4  WHILE	(0-3)
 	{BogenS, {(unsigned long) '?'},     NULL, 19, 6},	// 5  ?		(0-5)
 	{BogenS, {(unsigned long) '!'},     NULL, 20, 0},	// 6  !		(0-5)
 	//=============================================================================
@@ -160,9 +160,9 @@ tBogen gStmt[]={
 	{BogenS, {(unsigned long) zTHN},    NULL, 15, 0},	// 14 THEN für IF		(9-15)
 	{BogenG, {(unsigned long) gStmt},   st4 , 21, 0},	// 15 statement für IF	(15-X)
 	//=============================================================================
-	{BogenG, {(unsigned long) gCond},   NULL, 17, 0},	// 16 condition für WHILE	(3-10)
+	{BogenG, {(unsigned long) gCond},   st6 , 17, 0},	// 16 condition für WHILE	(3-10)
 	{BogenS, {(unsigned long) zDO},     NULL, 18, 0},	// 17 DO für WHILE			(10-16)
-	{BogenG, {(unsigned long) gStmt},   NULL, 21, 0},	// 18 statement für WHILE	(16-X)
+	{BogenG, {(unsigned long) gStmt},   st7 , 21, 0},	// 18 statement für WHILE	(16-X)
 	//=============================================================================
 	{BogenM, {(unsigned long) mcIdent}, st9, 21, 0},	// 19 IDENT für ?		(5-X)
 	//=============================================================================

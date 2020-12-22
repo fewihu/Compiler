@@ -4,6 +4,14 @@
 #ifndef SEMR_H
 #define SEMR_H
 
+#include "identDescr.h"
+
+//Suchfunktionen
+int searchLocal(	procDescr*, char*);
+int searchVarLocal(	char*, int*);
+int searchVarGlobal(char*, int*, int*);
+int searchConstant(	char*, int*);
+int searchProc(		char*, int*);
 
 //Block
 int bl1();
@@ -22,7 +30,9 @@ int st1();
 int st2();
 int st3();
 int st4();
-
+int st5();
+int st6();
+int st7();
 int st8();
 int st9();
 int st10();
@@ -48,8 +58,5 @@ int co5();
 int co6();
 int co7();
 int co8();
-
-//Test
-int kawup();
 
 #endif

@@ -2,6 +2,9 @@
 //Binärcodes PL0
 //übernommen von Prof A. Beck
 
+#ifndef CODE_H
+#define CODE_H
+
 typedef enum TCODE_0{
   
 	/*--- Kellerbefehle ---*/
@@ -73,4 +76,4 @@ typedef struct EPC{
 	short VarLen;
 }entryProcCode;
 
-
+#endif

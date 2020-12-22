@@ -12,20 +12,23 @@
 #include "lex.h"
 #include "simpleList.h"
 #include "code.h"
-
-
+#include "write2Code.h"
 
 int procIdx 	= 1; //0 ist das Hauptprogramm
 
+//aus lex.c (extern)
 tMorph Morph;			//in lex.c als extern deklariert
-procDescr* currProc;	//in bogen.c als extern deklariert	
-long* constBlock;		// -"-		
-int constBlockSize;		// -"-
-int		codeLen;		// -"-
-entryProcCode actEPC;	// -"-
-listHead* lablList;		// -"-
-short condCode;			// -"-
 
+//aus bogen.c (extern)
+procDescr*		currProc;	
+long* 			constBlock;		
+int 			constBlockSize;
+int				codeLen;
+entryProcCode	actEPC;
+listHead* 		lablList;
+short 			condCode;
+
+//Ausgabedatei und Codepuffer (extern aus bogen.c)
 FILE* test;				//Ausgabedatei
 FILE* codeBuf;			//Zwischendatei (Code der aktuellen Prozedur)
 
@@ -47,6 +50,7 @@ int searchLocal(procDescr* pProc, char* ident){
 	}
 }
 
+//lokale Suche nach Variablenbezeichner
 int searchVarLocal(char* varIdent, int* displ){
 	
 	listHead* 		head;
@@ -73,8 +77,10 @@ int searchVarLocal(char* varIdent, int* displ){
 			act = getNext(head);
 		}
 	}
+	return 0;
 }
 
+//lokale Suche nach globaler Variable
 int searchVarGlobal(char* varIdent, int* displ, int* procIdx){
 
 	procDescr*		actProc = currProc;
@@ -113,6 +119,7 @@ int searchVarGlobal(char* varIdent, int* displ, int* procIdx){
 	return 0;
 }
 
+//(globale) Suche nach Konstantenbezeichner
 int searchConstant(char* constIdent, int* index){
 	
 	procDescr*		actProc = currProc;
@@ -151,6 +158,7 @@ int searchConstant(char* constIdent, int* index){
 	return 0;
 }
 
+//(globale) Suche nach Prozedurbezeichner
 int searchProc(char* procIdent, int* index){
 	
 	procDescr* actProc = currProc;
@@ -188,251 +196,11 @@ int searchProc(char* procIdent, int* index){
 	return 0;	
 }
 
-void writeCode_0(tCode_0 opCode){
-	
-	char bCode = 0;
-	switch(opCode){
-		case retProc:
-			bCode = 23;
-			fwrite(&bCode, sizeof(char), 1, codeBuf);  
-			codeLen++;
-			break;
-			
-		case putVal:
-			bCode = 8;
-			fwrite(&bCode, sizeof(char), 1, codeBuf);  
-			codeLen++;
-			break;
-		
-		case vzMinus:
-			bCode = 10;
-			fwrite(&bCode, sizeof(char), 1, codeBuf);  
-			codeLen++;
-			break;
-		
-		case OpAdd:
-			bCode = 12;
-			fwrite(&bCode, sizeof(char), 1, codeBuf);  
-			codeLen++;
-			break;
-			
-		case OpSub:
-			bCode = 13;
-			fwrite(&bCode, sizeof(char), 1, codeBuf);  
-			codeLen++;
-			break;
-			
-		case OpMult:
-			bCode = 14;
-			fwrite(&bCode, sizeof(char), 1, codeBuf);
-			codeLen++;
-			break;
-		
-		case OpDiv:
-			bCode = 15;
-			fwrite(&bCode, sizeof(char), 1, codeBuf);
-			codeLen++;
-			break;
-			
-		case storeVal:
-			bCode = 7;
-			fwrite(&bCode, sizeof(char), 1, codeBuf);
-			codeLen++;
-			break;
-			
-		case getVal:
-			bCode = 9;
-			fwrite(&bCode, sizeof(char), 1, codeBuf);
-			codeLen++;
-			break;
-		
-		case odd: 
-			bCode = 11;
-			fwrite(&bCode, sizeof(char), 1, codeBuf);
-			codeLen++;
-			break;	
-			
-		case cmpEQ:
-			bCode = 16;
-			fwrite(&bCode, sizeof(char), 1, codeBuf);
-			codeLen++;
-			break;
-		
-		case cmpNE:
-			bCode = 17;
-			fwrite(&bCode, sizeof(char), 1, codeBuf);
-			codeLen++;
-			break;
-			
-		case cmpLT:
-			bCode = 18;
-			fwrite(&bCode, sizeof(char), 1, codeBuf);
-			codeLen++;
-			break;
-			
-		case cmpGT:
-			bCode = 19;
-			fwrite(&bCode, sizeof(char), 1, codeBuf);
-			codeLen++;
-			break;
-			
-		case cmpLE:
-			bCode = 20;
-			fwrite(&bCode, sizeof(char), 1, codeBuf);
-			codeLen++;
-			break;
-			
-		case cmpGE:
-			bCode = 21;
-			fwrite(&bCode, sizeof(char), 1, codeBuf);
-			codeLen++;
-			break;		
-			
-		default: break;
-	}
-}
-
-void writeCode_1(tCode_1 opCode, short arg1){
-
-	char bCode = 0;
-	char arg = 0;
-	switch(opCode){
-		case puConst:
-			bCode = 6;
-			fwrite(&bCode, sizeof(char), 1, codeBuf);
-			
-			arg = (unsigned char) (arg1 & 0xff);
-			fwrite(&arg, sizeof(char), 1, codeBuf);
-			arg = (unsigned char) (arg1 >> 8);
-			fwrite(&arg, sizeof(char), 1, codeBuf);
-			
-			codeLen += 3;
-			break;
-			
-		case puValVrLocl:
-			bCode = 0;
-			fwrite(&bCode, sizeof(char), 1, codeBuf);
-			
-			arg = (unsigned char) (arg1 & 0xff);
-			fwrite(&arg, sizeof(char), 1, codeBuf);
-			arg = (unsigned char) (arg1 >> 8);
-			fwrite(&arg, sizeof(char), 1, codeBuf);
-			
-			codeLen += 3;
-			break;
-			
-		case puAdrVrLocl:
-			bCode = 3;
-			fwrite(&bCode, sizeof(char), 1, codeBuf);
-			
-			arg = (unsigned char) (arg1 & 0xff);
-			fwrite(&arg, sizeof(char), 1, codeBuf);
-			arg = (unsigned char) (arg1 >> 8);
-			fwrite(&arg, sizeof(char), 1, codeBuf);
-			
-			codeLen += 3;
-			break;
-		case call:
-			bCode = 22;
-			fwrite(&bCode, sizeof(char), 1, codeBuf);
-			
-			arg = (unsigned char) (arg1 & 0xff);
-			fwrite(&arg, sizeof(char), 1, codeBuf);
-			arg = (unsigned char) (arg1 >> 8);
-			fwrite(&arg, sizeof(char), 1, codeBuf);
-			
-			codeLen += 3;
-			break;
-			
-		case jnot:
-			bCode = 25;
-			fwrite(&bCode, sizeof(char), 1, codeBuf);
-			
-			arg = (unsigned char) (arg1 & 0xff);
-			fwrite(&arg, sizeof(char), 1, codeBuf);
-			arg = (unsigned char) (arg1 >> 8);
-			fwrite(&arg, sizeof(char), 1, codeBuf);
-			
-			codeLen += 3;
-			break;
-						
-		default: break;
-	}
-}
-
-void writeCode_2(tCode_2 opCode, short arg1, short arg2){
-	
-	char bCode	= 0;
-	char arg	= 0;
-	
-	switch(opCode){
-		case puValVrGlob:
-			bCode = 2;
-			fwrite(&bCode, sizeof(char), 1, codeBuf);
-			
-			arg = (unsigned char) (arg1 & 0xff);
-			fwrite(&arg, sizeof(char), 1, codeBuf);
-			arg = (unsigned char) (arg1 >> 8);
-			fwrite(&arg, sizeof(char), 1, codeBuf);
-			
-			arg = (unsigned char) (arg2 & 0xff);
-			fwrite(&arg, sizeof(char), 1, codeBuf);
-			arg = (unsigned char) (arg2 >> 8);
-			fwrite(&arg, sizeof(char), 1, codeBuf);
-			
-			codeLen += 5;
-			break;
-		
-		case puAdrVrGlob: 
-			bCode = 5;
-			
-			fwrite(&bCode, sizeof(char), 1, codeBuf);
-			
-			arg = (unsigned char) (arg1 & 0xff);
-			fwrite(&arg, sizeof(char), 1, codeBuf);
-			arg = (unsigned char) (arg1 >> 8);
-			fwrite(&arg, sizeof(char), 1, codeBuf);
-			
-			arg = (unsigned char) (arg2 & 0xff);
-			fwrite(&arg, sizeof(char), 1, codeBuf);
-			arg = (unsigned char) (arg2 >> 8);
-			fwrite(&arg, sizeof(char), 1, codeBuf);
-			
-			codeLen += 5;
-			break;
-			
-		
-		default: break;
-	}
-}
-
-void writeEPC(short arg1, short arg2, short arg3){
-	
-	char entryProc = 26;
-	char arg = 0;
-
-	fwrite(&entryProc, sizeof(char), 1, test);
-	
-	arg = (unsigned char) (arg1 & 0xff);
-	fwrite(&arg, sizeof(char), 1, test);
-	arg = (unsigned char) (arg1 >> 8);
-	fwrite(&arg, sizeof(char), 1, test);
-	
-	arg = (unsigned char) (arg2 & 0xff);
-	fwrite(&arg, sizeof(char), 1, test);
-	arg = (unsigned char) (arg2 >> 8);
-	fwrite(&arg, sizeof(char), 1, test);
-	
-	arg = (unsigned char) (arg3 & 0xff);
-	fwrite(&arg, sizeof(char), 1, test);
-	arg = (unsigned char) (arg3 >> 8);
-	fwrite(&arg, sizeof(char), 1, test);
-}
-
+// === Condition ===
 int co1(){ //odd
 	
 	printf("co1 erreicht\n\tschreibe odd in Buffer\n");
-	writeCode_0(odd);
+	writeCode_0(odd, codeBuf);
 	return 1;
 }
 
@@ -481,10 +249,11 @@ int co7(){ //>=
 int co8(){
 	
 	printf("co8 erreicht\n\tgepufferter Code wird geschrieben\n");
-	writeCode_0(condCode);
+	writeCode_0(condCode, codeBuf);
 	return 1;
 }
 
+// === Block ===
 int bl1(){ // --ident-->  (const)
 
 	printf("bl1 erreicht\n\tsuche Konstantenbezeichner in lokaler Namensliste\n");
@@ -553,8 +322,6 @@ int bl2(){ // --mcNum--> (Wert für const)
 	return 1;
 }
 
-
-
 int bl3(){ // --ident--> (var)
 	
 	printf("bl3 erreicht\n\tsuche Variablenbezeichner in lokaler Namensliste\n");
@@ -603,6 +370,7 @@ int bl4(){ // --ident--> (procedure)
 	}else{
 		printf("Semantikfehler: Prozedurbezeichner %s bereits vergeben (Zeile %d, Spalte %d)\n", 
 			Morph.Val.pStr, Morph.posLine, Morph.posCol);
+		exit(1);
 	}
 }
 
@@ -621,12 +389,13 @@ int bl5(){ // --;--> (schließt Block von procedure ab)
 	
 			switch(((identDescr*)act->data)->identType){
 				case identVar: 
-					printf("    Variable: %s\n",((identDescr*)act->data)->name);
+					printf("\tVariable: %s\n",((identDescr*)act->data)->name);
 					break;
 				case identConst:
-					printf("    Const: %s\n", ((identDescr*)act->data)->name );
+					printf("\tConst: %s", ((identDescr*)act->data)->name );
 					printf(", Wert:  %ld\n", *(constBlock + (((constDescr*)((identDescr*)act->data)->pObj)->idx) * sizeof(long)));
 					break;
+				default: break;
 			}
 			act=getNext(currProc->localNameList);
 		}
@@ -641,10 +410,10 @@ int bl5(){ // --;--> (schließt Block von procedure ab)
 	printf("\tschreibe retProc in Puffer, schreibe EntryProc in Ausgabe\n");
 	
 	//schreibe Operation RETPROC in Puffer
-	writeCode_0(retProc);
+	writeCode_0(retProc, codeBuf);
 	
 	//schreibe Operation ENTRYPROC und Parameter direkt in Ausgabedatei
-	writeEPC(codeLen + 7, currProc->idx, currProc->memAllocCount);
+	writeEPC(codeLen + 7, currProc->idx, currProc->memAllocCount, test);
 
 	//öffne Puffer zum lesen
 	int ret = fclose(codeBuf);
@@ -666,7 +435,7 @@ int bl5(){ // --;--> (schließt Block von procedure ab)
 
 	//schließe und lösche Puffer
 	ret = fclose(codeBuf);
-	//remove("codeBuf");
+	remove("codeBuf");
 	printf("\tschließe Buffer %d und lösche die Datei\n", ret);
 	
 	//lokale Namensliste nicht mehr gebraucht, übergeordnete wird umgebende Prozedur
@@ -676,8 +445,6 @@ int bl5(){ // --;--> (schließt Block von procedure ab)
 	
 	return 1;
 }
-
-
 
 int bl6(){ //Block für neue Prozedur beginnt
 	
@@ -696,6 +463,7 @@ int bl6(){ //Block für neue Prozedur beginnt
 	return 1;
 }
 
+// === Faktor ===
 int fa1(){ //mcNum (Direktkonstante)
 
 	printf("fa1 erreicht\n\tsuche Konstantenwert in constBlock %d\n", constBlockSize);
@@ -706,9 +474,9 @@ int fa1(){ //mcNum (Direktkonstante)
 	short i = 0;
 	while(i < constBlockSize){
 		
-		printf("\tgesucht: %ld, gefunden: %ld\n", Morph.Val.Num, *(constBlock + i * sizeof(long)));
+		printf("\tgesucht: %ld, gefunden: %ld\n", Morph.Val.Num, *(constBlock + i));
 
-		if(*(constBlock + i * sizeof(long)) == Morph.Val.Num){
+		if(*(constBlock + i ) == Morph.Val.Num){
 			//gefunden? -> setze Index
 			found++;
 			printf("\tKonstantenwert %ld schon vorhanden, setze Index\n", Morph.Val.Num);
@@ -739,7 +507,7 @@ int fa1(){ //mcNum (Direktkonstante)
 	}
 	
 	//schreibe Operation PuConst und Parameter in Puffer
-	writeCode_1(puConst, i);
+	writeCode_1(puConst, i, codeBuf);
 	
 	return 1;
 }
@@ -754,14 +522,14 @@ int fa2(){ //mcIdent (Konstante oder Variable)
 	
 	int ret = searchConstant(Morph.Val.pStr, &index);
 	if(ret){
-		writeCode_1(puConst, index);
+		writeCode_1(puConst, index, codeBuf);
 		printf("\tBezeichner ist Konstante, schreibe puConst\n");
 		return 1;
 	}
 	
 	ret = searchVarLocal(Morph.Val.pStr, &displ);
 	if(ret){
-		writeCode_1(puValVrLocl, displ);
+		writeCode_1(puValVrLocl, displ, codeBuf);
 		printf("\tBezeichner ist lokale Variable, schreibe puValVrLocl\n");
 		return 1;
 	}
@@ -769,16 +537,19 @@ int fa2(){ //mcIdent (Konstante oder Variable)
 	//neu
 	ret = searchVarGlobal(Morph.Val.pStr, &displ, &procIdx);
 	if(ret){
-		writeCode_2(puValVrGlob, displ, procIdx);
+		writeCode_2(puValVrGlob, displ, procIdx, codeBuf);
 		printf("\tBezeichner ist globale Variable, schreibe puValVrGlob\n");
 		return 1;
 	}
 	
 	printf("Bezeichner %s ist nicht definiert (Zeile %d, Spalte %d)\n", 
 		Morph.Val.pStr, Morph.posLine, Morph.posCol);
+	exit(1);
 }
 
+// === Statement ===
 int st1(){ //Ident für Zuweisung (Adresse wird auf Stack gepusht)
+	
 	printf("st1 erreicht\n");
 	
 	int displ;
@@ -786,14 +557,14 @@ int st1(){ //Ident für Zuweisung (Adresse wird auf Stack gepusht)
 	int ret = searchVarLocal(Morph.Val.pStr, &displ);
 	if(ret){
 		printf("\tVariablenbezeichner gefunden, schreibe puAdrVrLocl\n");
-		writeCode_1(puAdrVrLocl, displ);
+		writeCode_1(puAdrVrLocl, displ, codeBuf);
 		return 1;
 	}
 	
 	ret = searchVarGlobal(Morph.Val.pStr, &displ, &procIdx);
 	if(ret){
 		printf("\tVariablenbezeichner gefunden, schreibe puAdrVrGlob\n");
-		writeCode_2(puAdrVrGlob, displ, procIdx);
+		writeCode_2(puAdrVrGlob, displ, procIdx, codeBuf);
 		return 1;	
 	}
 		
@@ -804,20 +575,17 @@ int st1(){ //Ident für Zuweisung (Adresse wird auf Stack gepusht)
 
 int st2(){ //expr für Ident (Zuweisung)
 
-	printf("st2 erreicht, schreibe storeVal in Buffer\n");
+	printf("st2 erreicht\n\tschreibe storeVal in Buffer\n");
 		
-	writeCode_0(storeVal);
+	writeCode_0(storeVal, codeBuf);
 	return 1;
 }
 
 int st3(){
 	
-	printf("st3 erreicht\n");
-	printf("\nCodelänge vor jnot %d\n", codeLen);
-	
+	printf("st3 erreicht\n\tCodelänge vor jnot %d\n", codeLen);
 	
 	short* relAdr	= malloc(sizeof(short));
-//aktueller Bufferindex + Platz für jnot und Parameter
 	*relAdr			= codeLen;
 	
 	listElement* newElement = malloc(sizeof(listElement));
@@ -825,7 +593,7 @@ int st3(){
 	
 	insertFrst(newElement, lablList);
 	
-	writeCode_1(jnot, 0); 
+	writeCode_1(jnot, 0, codeBuf); 
 	return 1;
 }
 
@@ -834,8 +602,8 @@ int st4(){
 	printf("st4 erreicht\n");
 
 	listElement* label = popFrst(lablList);
-	short* relAdr = (short*) label->data;
-	short x = *relAdr;
+	short x = *((short*) label->data);
+	
 	if(label){
 		short lenCondBlck = ((short)(codeLen)) - x - 3;
 		
@@ -858,6 +626,77 @@ int st4(){
 	}else return 0;
 }
 
+int st5(){
+	
+	printf("st5 erreicht\n\tsetze Label vor Schleifenbedingung\n");
+	short* relAdr	= malloc(sizeof(short));
+	*relAdr			= codeLen;
+	
+	listElement* newElement = malloc(sizeof(listElement));
+	newElement->data		= relAdr;
+	
+	insertFrst(newElement, lablList);
+	
+	return 1;
+}
+
+int st6(){
+
+	printf("st6 erreicht\n\tsetze Label auf jnot Befehl\n");
+	short* relAdr	= malloc(sizeof(short));
+	*relAdr			= codeLen;
+	
+	listElement* newElement = malloc(sizeof(listElement));
+	newElement->data		= relAdr;
+	
+	insertFrst(newElement, lablList);
+	
+	writeCode_1(jnot, 0, codeBuf); 
+	return 1;
+}
+
+int st7(){
+	
+	printf("st7 erreicht\n\tberechne aus Labeln Relativadressen für Sprungbefehle\n");
+	
+	listElement* label = popFrst(lablList);
+	short x = *((short*) label->data);
+	int ret;
+	
+	if(label){
+		short lenCondBlck = ((short)(codeLen)) - x;
+		
+		printf("\tSpringe zu Byte %d\n", x);
+		
+		ret = fseek(codeBuf, x+1, SEEK_SET);
+		if(ret != 0){ printf("fseek :(\n"); exit(-1); }
+		
+		printf("\tRelativadresse (Rücksprunglabel) beträgt %d\n", lenCondBlck);
+		
+		char arg;
+		
+		arg = (unsigned char) (lenCondBlck & 0xff);
+		fwrite(&arg, sizeof(char), 1, codeBuf);
+		arg = (unsigned char) (lenCondBlck >> 8);
+		fwrite(&arg, sizeof(char), 1, codeBuf);
+		
+		ret = fseek(codeBuf, 0, SEEK_END);
+		if(ret != 0){ printf("fseek :(\n"); exit(-1);}
+		
+		label = popFrst(lablList);
+		if(!label){ printf("NULL-Error Labelliste\n"); exit(1);}
+		
+		x = *((short*) label->data);
+		
+		lenCondBlck = ((short) codeLen) - x + 3;		
+		printf("\tRelativadresse (Conditionlable) beträgt %d\n", -lenCondBlck);
+							
+		writeCode_1(jmp, -lenCondBlck, codeBuf);
+		
+		return 1;
+	}else return 0;
+}
+
 int st8(){ //procIdent für call
 
 	printf("st8 erreicht\n");
@@ -865,7 +704,7 @@ int st8(){ //procIdent für call
 	int ret = searchProc(Morph.Val.pStr, &procIdx);
 	if(ret){
 		printf("\tProzedur gefunden, schreibe call\n");
-		writeCode_1(call, procIdx);
+		writeCode_1(call, procIdx, codeBuf);
 		return 1;
 	}
 	
@@ -875,6 +714,7 @@ int st8(){ //procIdent für call
 }
 
 int st9(){ // ident für ? (Adresse wird gepusht)
+	
 	printf("st9 erreicht\n");
 	
 	int displ;
@@ -883,16 +723,16 @@ int st9(){ // ident für ? (Adresse wird gepusht)
 	int ret = searchVarLocal(Morph.Val.pStr, &displ);
 	if(ret){
 		printf("\tVariablenbezeichner gefunden, schreibe puAdrVrLocl und getVal\n");
-		writeCode_1(puAdrVrLocl, displ);
-		writeCode_0(getVal);
+		writeCode_1(puAdrVrLocl, displ, codeBuf);
+		writeCode_0(getVal, codeBuf);
 		return 1;
 	}
 	
 	ret = searchVarGlobal(Morph.Val.pStr, &displ, &procIdx);
 	if(ret){
 		printf("\tVariablenbezeichner gefunden, schreibe puAdrVrGlob\n");
-		writeCode_2(puAdrVrGlob, displ, procIdx);
-		writeCode_0(getVal);
+		writeCode_2(puAdrVrGlob, displ, procIdx, codeBuf);
+		writeCode_0(getVal, codeBuf);
 		return 1;
 	}
 	
@@ -905,7 +745,7 @@ int st10(){ //Expression für ! (Wert steht auf Stack)
 
 	printf("st10 erreicht\n\tschreibe putVal in Buffer\n");
 
-	writeCode_0(putVal);
+	writeCode_0(putVal, codeBuf);
 
 	return 1;
 }
@@ -951,7 +791,7 @@ int ex1(){
 	
 	printf("ex1 erreicht\n\tschreibe vzMinus in Buffer\n");
 
-	writeCode_0(vzMinus);
+	writeCode_0(vzMinus, codeBuf);
 	return 1;
 }
 
@@ -959,7 +799,7 @@ int ex2(){
 
 	printf("ex2 erreicht\n\tschreibe OpAdd in Buffer\n");
 
-	writeCode_0(OpAdd);
+	writeCode_0(OpAdd, codeBuf);
 	return 1;
 }
 
@@ -967,7 +807,7 @@ int ex3(){
 
 	printf("ex3 erreicht\n\tschreibe OpSub in Buffer\n");
 	
-	writeCode_0(OpSub);
+	writeCode_0(OpSub, codeBuf);
 	return 1;
 }
 
@@ -975,7 +815,7 @@ int te1(){
 	
 	printf("te1 erreicht\n\t schreibe OpMult in Buffer\n");
 	
-	writeCode_0(OpMult);
+	writeCode_0(OpMult, codeBuf);
 	return 1;
 }
 
@@ -983,12 +823,6 @@ int te2(){
 	
 	printf("te2 erreicht\n\t schreibe OpDiv in Buffer\n");
 	
-	writeCode_0(OpDiv);
+	writeCode_0(OpDiv, codeBuf);
 	return 1;	
-}
-
-//Testfunktion
-int kawup(){
-	printf("steige in Ausdruck ab\n");
-	return 1;
 }

@@ -11,6 +11,13 @@
 //Index Funktionspointer beenden
 #define e 4
 
+//Prototypen für Lexeraktionen
+static void l(void);
+static void b(void);
+static void sl(void);
+static void gsl(void);
+static void slb(void);
+
 //################################################################
 //Zeichenklassenvektor
 //0... Sonderzeichen, 1... Buchstabe, 2... Ziffern, 3... :, 4... =, 5... <, 6... >, 7... sonstige Sonderzeichen
@@ -189,10 +196,13 @@ static void b(void){
 			//printf("\t\t\t LEXER: :\n");
 			break;
 		case 4: // <
-			//printf("\t\t\t LEXER: <\n");
+			Morph.Val.Symb	= '<';
+			Morph.MC		= mcSymb;
 			break;
 		case 5: // >
 			//printf("\t\t\t LEXER: >\n");
+			Morph.Val.Symb	= '>';
+			Morph.MC		= mcSymb;
 			break;
 		case 6: //ergibt
 			//printf("\t\t\t LEXER: :=\n");
@@ -213,15 +223,15 @@ static void b(void){
 			break;
 		case 10: //Schlüsselwort -> genau finden
 			hIndex = getHIndex(buf);
-			if(htkw[hIndex] == 0) {	
+			if(htkw[(int)hIndex] == 0) {	
 				Morph.MC = mcIdent;
 				Morph.Val.pStr = buf;
 				break;
 			}
 			else{
-				if(strcmp(cKw[htkw[hIndex]-1], buf) == 0){
+				if(strcmp(cKw[htkw[(int)hIndex]-1], buf) == 0){
 					Morph.MC = mcSymb;
-					Morph.Val.Symb = 130 + htkw[hIndex];
+					Morph.Val.Symb = 130 + htkw[(int)hIndex];
 					break;
 				}else{
 					Morph.MC = mcIdent;
@@ -264,8 +274,11 @@ tMorph* lex(void){
 	do{
 		//printf("ZUSTAND: %d\n",zustand);
 		//printf("KLASSE : %d\n",zkv[c]);
-		fZustand = aTable_fz[zustand][zkv[c]];
-		fp[aTable_pi[zustand][zkv[c]]]();
+		fZustand = aTable_fz[zustand]
+							[((int)zkv[((int)c)])];
+							
+		fp[aTable_pi[zustand]
+					[((int)zkv[((int)c)])]]();
 		zustand = fZustand;
 		//printf("FZUSTAND:%d\n",fZustand);
 	}while(end == 0);

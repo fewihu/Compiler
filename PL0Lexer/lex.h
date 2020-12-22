@@ -37,10 +37,4 @@ typedef struct{
 int initLex();
 tMorph * lex();
 
-static void l(void);
-static void b(void);
-static void sl(void);
-static void gsl(void);
-static void slb(void);
-
 #endif

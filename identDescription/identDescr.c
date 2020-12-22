@@ -55,7 +55,7 @@ procDescr* createProcDescr(int idx, procDescr* prntProc){
 	procDescr* new = malloc(sizeof(procDescr));
 	if(new){
 		new->idx			= idx;
-		new->prntProc		= (struct procDecr*)prntProc;
+		new->prntProc		= (struct procDescr*)prntProc;
 		new->memAllocCount	= 0;
 		new->localNameList	= malloc(sizeof(listHead));
 		initList(new->localNameList);
