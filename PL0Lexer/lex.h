@@ -11,7 +11,7 @@ typedef void (*funcPointer) (void);
 typedef enum T_ZS{
 	zNIL,
 	zErg = 128, zLE, zGE, //:=   <=   >=
-	zBGN, zCLL, zCST, zDO, zEND, zIF, zODD, zPRC, zTHN, zVAR, zWHL
+	zBGN, zCLL, zCST, zDO, zEND, zIF, zODD, zPRC, zTHN, zVAR, zWHL, zELS
 }tZS;
 
 //Morphemcodes

@@ -21,7 +21,7 @@ static void slb(void);
 //################################################################
 //Zeichenklassenvektor
 //0... Sonderzeichen, 1... Buchstabe, 2... Ziffern, 3... :, 4... =, 5... <, 6... >, 7... sonstige Sonderzeichen
-//8... ausschliesslich Anfangszeichen eines SW (B,P,V,W)
+//8... ausschliesslich Anfangszeichen eines SW (B,P,V,W, E)
 //9... Anfangszeichen oder sonstiges Zeichen eines SW (A,C,D,E,F,G,H,I,L,N,O,R,S,T,U)
 static char zkv[128]=
 {// 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
@@ -29,7 +29,7 @@ static char zkv[128]=
 	7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, //1..
 	7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //2..
 	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 0, 5, 4, 6, 0, //3.. 
-	0, 9, 8, 9, 9, 9, 9, 9, 9, 9, 1, 1, 9, 1, 9, 9, //4..
+	0, 9, 8, 9, 9, 8, 9, 9, 9, 9, 1, 1, 9, 1, 9, 9, //4..
 	8, 1, 9, 9, 9, 9, 8, 8, 1, 1, 1, 0, 0, 0, 0, 0, //5..
 	0, 9, 8, 9, 9, 9, 9, 9, 9, 9, 1, 1, 9, 1, 9, 9, //6..
 	8, 1, 9, 9, 9, 9, 8, 8, 1, 1, 1, 0, 0, 0, 0, 0,	//7..
@@ -46,7 +46,7 @@ static char htkw[128]=
 	0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 3, 6, 0, 0, 0, //0...
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, //1...
     9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //2...
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //3...
+   12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //3...
     0, 0, 0,10, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, //4...
     0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, //5...
     0, 0, 8, 0, 0, 0, 0, 0,11, 0, 5, 0, 0, 0, 0, 0, //6...
@@ -54,10 +54,10 @@ static char htkw[128]=
 };
 
 
-static char* cKw[11]=
+static char* cKw[12]=
 {
 	"BEGIN\0", "CALL\0", "CONST\0", "DO\0" , "END\0"  , "IF\0",
-	"ODD\0"  , "PROCEDURE\0"      ,"THEN\0", "VAR\0"  , "WHILE\0"
+	"ODD\0"  , "PROCEDURE\0"      ,"THEN\0", "VAR\0"  , "WHILE\0", "ELSE\0"
 };
 
 
@@ -221,8 +221,8 @@ static void b(void){
 			Morph.Val.pStr = buf;
 			Morph.MC = mcIdent;
 			break;
-		case 10: //Schlüsselwort -> genau finden
-			hIndex = getHIndex(buf);
+		case 10: //Schlüsselwort -> genau finden			
+			hIndex = getHIndex(buf);			
 			if(htkw[(int)hIndex] == 0) {	
 				Morph.MC = mcIdent;
 				Morph.Val.pStr = buf;
