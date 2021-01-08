@@ -23,11 +23,12 @@ static void slb(void);
 //0... Sonderzeichen, 1... Buchstabe, 2... Ziffern, 3... :, 4... =, 5... <, 6... >, 7... sonstige Sonderzeichen
 //8... ausschliesslich Anfangszeichen eines SW (B,P,V,W, E)
 //9... Anfangszeichen oder sonstiges Zeichen eines SW (A,C,D,E,F,G,H,I,L,N,O,R,S,T,U)
+//10...Anführungszeichen
 static char zkv[128]=
 {// 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
 	7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, //0..
 	7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, //1..
-	7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //2..
+	7, 0,10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //2..
 	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 0, 5, 4, 6, 0, //3.. 
 	0, 9, 8, 9, 9, 8, 9, 9, 9, 9, 1, 1, 9, 1, 9, 9, //4..
 	8, 1, 9, 9, 9, 9, 8, 8, 1, 1, 1, 0, 0, 0, 0, 0, //5..
@@ -66,36 +67,39 @@ static char* cKw[12]=
 
 //Automatentabelle(aktueller Zustand, Zeichenklasse -> Folgezustand)
 //Folgezustand e == 4 beim beenden der Übersicht halber 
-int aTable_fz[11][10]  =
-{  //SZ B  Z  :  =  <  >  - ASw sSw
-	{e, 1, 2, 3, 0, 4, 5, 0, 9, 9}, //Zustand 0 leer
-	{e, 1, 1, e, e, e, e, e, 1, 1}, //Zustand 1 Buchstabe
-	{e, e, 2, e, e, e, e, e, e, e}, //Zustand 2 Ziffer
-	{e, e, e, e, 6, e, e, e, e, e}, //Zustand 3 :
-	{e, e, e, e, 7, e, e, e, e, e}, //Zustand 4 <
-	{e, e, e, e, 8, e, e, e, e, e}, //Zustand 5 >  
-	{e, e, e, e, e, e, e, e, e, e}, //Zustand 6 :=
-	{e, e, e, e, e, e, e, e, e, e}, //Zustand 7 <=
-	{e, e, e, e, e, e, e, e, e, e}, //Zustand 8 >=
-	{1, 1, 1, e, e, e, e, e, 1,10}, //Zustand 9 Anfang eines SW gelesen
-	{10,1, 1,10,10,10,10,10, 1,10}  //Zustand 10 nur Zeichen eines SW gelesen
+int aTable_fz[12][11]  =
+{  //SZ B  Z  :  =  <  >  - ASw sSw  "
+	{e, 1, 2, 3, 0, 4, 5, 0,  9, 9,  11},//Zustand 0 leer
+	{e, 1, 1, e, e, e, e, e,  1, 1,  e}, //Zustand 1 Buchstabe
+	{e, e, 2, e, e, e, e, e,  e, e,  e}, //Zustand 2 Ziffer
+	{e, e, e, e, 6, e, e, e,  e, e,  e}, //Zustand 3 :
+	{e, e, e, e, 7, e, e, e,  e, e,  e}, //Zustand 4 <
+	{e, e, e, e, 8, e, e, e,  e, e,  e}, //Zustand 5 >  
+	{e, e, e, e, e, e, e, e,  e, e,  e}, //Zustand 6 :=
+	{e, e, e, e, e, e, e, e,  e, e,  e}, //Zustand 7 <=
+	{e, e, e, e, e, e, e, e,  e, e,  e}, //Zustand 8 >=
+	{1, 1, 1, e, e, e, e, e,  1,10,  e}, //Zustand 9 Anfang eines SW gelesen
+	{10,1, 1, 10,10,10,10,10, 1,10,  e}, //Zustand 10 nur Zeichen eines SW gelesen
+	{11,11,11,11,11,11,11,11,11,11,  e}  //Zustand 11 Zeichenkette
 };
 
 
 //zustand, zeichenklasse -> Funktion
-int aTable_pi[11][10] =
-{  //SZ B  Z  :  =  <  >  - ASw sSw
-	{3, 2, 1, 1, 3, 1, 1, 0, 2, 2}, //Zustand 0 leer
-	{e, 2, 1, e, e, e, e, e, 2, 2}, //Zustand 1 Buchstabe
-	{e, e, 1, e, e, e, e, e, 1, e}, //Zustand 2 Ziffer
-	{e, e, e, e, 1, e, e, e, e, e}, //Zustand 3 :
-	{e, e, e, e, 1, e, e, e, e, e}, //Zustand 4 <
-	{e, e, e, e, 1, e, e, e, e, e}, //Zustand 5 >
-	{e, e, e, e, e, e, e, e, e, e}, //Zustand 6 :=
-	{e, e, e, e, e, e, e, e, e, e}, //Zustand 7 <=
-	{e, e, e, e, e, e, e, e, e, e}, //Zustand 8 >=
-	{e, 2, 1, e, e, e, e, e, 2, 2}, //Zustand 9 Anfang eines SW gelesen
-	{e, 2, 1, e, e, e, e, e, 2, 2}  //Zustand 10 nur Zeichen eines SW gelesen
+int aTable_pi[12][11] =
+{  //SZ B  Z  :  =  <  >  - ASw sSw "
+	{3, 2, 1, 1, 3, 1, 1, 0, 2, 2,  1}, //Zustand 0 leer
+	{e, 2, 1, e, e, e, e, e, 2, 2,  e}, //Zustand 1 Buchstabe
+	{e, e, 1, e, e, e, e, e, 1, e,  e}, //Zustand 2 Ziffer
+	{e, e, e, e, 1, e, e, e, e, e,  e}, //Zustand 3 :
+	{e, e, e, e, 1, e, e, e, e, e,  e}, //Zustand 4 <
+	{e, e, e, e, 1, e, e, e, e, e,  e}, //Zustand 5 >
+	{e, e, e, e, e, e, e, e, e, e,  e}, //Zustand 6 :=
+	{e, e, e, e, e, e, e, e, e, e,  e}, //Zustand 7 <=
+	{e, e, e, e, e, e, e, e, e, e,  e}, //Zustand 8 >=
+	{e, 2, 1, e, e, e, e, e, 2, 2,  e}, //Zustand 9 Anfang eines SW gelesen
+	{e, 2, 1, e, e, e, e, e, 2, 2,  e}, //Zustand 10 nur Zeichen eines SW gelesen
+	{1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  3} //Zustand 11 Zeichenkette
+	//TODO Zeichenkette -> sonstiges Sonderzeichen -> sl ist fraglich
 };
 
 
@@ -239,6 +243,10 @@ static void b(void){
 					break;
 				}
 			}
+			break;
+		case 11: //Zeichenkette
+			Morph.Val.pStr = buf;
+			Morph.MC = mcString;
 			break;
 		default: break;
 	}		

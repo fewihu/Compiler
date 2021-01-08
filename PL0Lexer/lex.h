@@ -15,7 +15,7 @@ typedef enum T_ZS{
 }tZS;
 
 //Morphemcodes
-typedef enum T_MC {mcEmpty, mcSymb, mcNum, mcIdent}tMC;
+typedef enum T_MC {mcEmpty, mcSymb, mcNum, mcIdent, mcString}tMC;
 
 //Morphem-Struktur
 typedef struct{
