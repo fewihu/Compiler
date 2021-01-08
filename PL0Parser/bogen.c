@@ -148,29 +148,32 @@ tBogen gStmt[]={
 	{BogenS, {(unsigned long) '!'},     NULL, 20, 0},	// 6  !		(0-5)
 	//=============================================================================
 	{BogenS, {(unsigned long) zErg},    NULL,  8, 0},	// 7  := für IDENT		(1-8)
-	{BogenG, {(unsigned long) gExpr},   st2,  21, 0},	// 8  EXPR für IDENT	(8-X)
+	{BogenG, {(unsigned long) gExpr},   st2,  22, 0},	// 8  EXPR für IDENT	(8-X)
 	//=============================================================================						
-	{BogenM, {(unsigned long) mcIdent}, st8 , 21, 0},	// 9  IDENT für CALL	(4-X)
+	{BogenM, {(unsigned long) mcIdent}, st8 , 22, 0},	// 9  IDENT für CALL	(4-X)
 	//=============================================================================
 	{BogenG, {(unsigned long) gStmt},   NULL, 11, 0},	// 10 statement für BEGIN	(7-14)
 	{BogenS, {(unsigned long) ';'},     NULL, 10,12},	// 11 ';' trennt statements (14-7)
-	{BogenS, {(unsigned long) zEND},    NULL, 21, 0},	// 12 END zu BEGIN			(14-X)
+	{BogenS, {(unsigned long) zEND},    NULL, 22, 0},	// 12 END zu BEGIN			(14-X)
 	//=============================================================================
 	{BogenG, {(unsigned long) gCond},   st3 , 14, 0},	// 13 condition für IF	(2-9)
 	{BogenS, {(unsigned long) zTHN},    NULL, 15, 0},	// 14 THEN für IF		(9-15)
-	{BogenG, {(unsigned long) gStmt},   st4 , 21, 0},	// 15 statement für IF	(15-X)
+	{BogenG, {(unsigned long) gStmt},   st4 , 22, 0},	// 15 statement für IF	(15-X)
 	//=============================================================================
 	{BogenG, {(unsigned long) gCond},   st6 , 17, 0},	// 16 condition für WHILE	(3-10)
 	{BogenS, {(unsigned long) zDO},     NULL, 18, 0},	// 17 DO für WHILE			(10-16)
-	{BogenG, {(unsigned long) gStmt},   st7 , 21, 0},	// 18 statement für WHILE	(16-X)
+	{BogenG, {(unsigned long) gStmt},   st7 , 22, 0},	// 18 statement für WHILE	(16-X)
 	//=============================================================================
-	{BogenM, {(unsigned long) mcIdent}, st9, 21, 0},	// 19 IDENT für ?		(5-X)
+	{BogenM, {(unsigned long) mcIdent}, st9, 22, 0},	// 19 IDENT für ?		(5-X)
 	//=============================================================================
-	{BogenG, {(unsigned long) gExpr},   st10, 21, 0},	// 20 expression für !	(6-X)
+	{BogenG, {(unsigned long) gExpr},   st10, 22, 21},	// 20 expression für !	(6-X)
 	//=============================================================================
-	{BogenE, {(unsigned long) 0},		NULL,  0, 0}	// 21 X ENDE	
+	{BogenM, {(unsigned long) mcString},st11, 22, 0},	// 21 String für !
+	//=============================================================================
+	{BogenE, {(unsigned long) 0},		NULL,  0, 0}	// 22 X Ende
 };	
 
+//TODO alle 21 setzen auf neues Ende
 
 //==================================================
 //Block

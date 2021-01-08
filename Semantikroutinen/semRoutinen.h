@@ -36,6 +36,7 @@ int st7();
 int st8();
 int st9();
 int st10();
+int st11();
 
 //Program
 int pr1();

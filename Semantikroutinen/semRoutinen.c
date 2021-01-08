@@ -134,7 +134,8 @@ int searchConstant(char* constIdent, int* index){
 		
 		if(head->size > 0){
 			act = getFirst(head); 
-			while(act != NULL){
+			int size = head->size; 
+			while(act != NULL && size){
 			
 				actDescr = (identDescr*) act->data;
 				if(actDescr->identType == identConst){
@@ -146,7 +147,7 @@ int searchConstant(char* constIdent, int* index){
 					}
 				}
 			
-				act=getNext(head);
+				act=getNext(head); size--;
 			}
 		}		
 		
@@ -365,7 +366,7 @@ int bl4(){ // --ident--> (procedure)
 		//globale Variablen setzen
 		currProc				= newProc;	//umgebende Proc ist neue Proc
 		
-		printf("\tProzedurbezeichner %s akzeptiert\n", Morph.Val.pStr);
+		printf("\tProzedurbezeichner %s akzeptiert, Prozedurindex %d\n", Morph.Val.pStr, newProc->idx);
 		return 1;
 	}else{
 		printf("Semantikfehler: Prozedurbezeichner %s bereits vergeben (Zeile %d, Spalte %d)\n", 
@@ -385,8 +386,9 @@ int bl5(){ // --;--> (schließt Block von procedure ab)
 	if(currProc->localNameList->size > 0){
 		listElement* act = getFirst(currProc->localNameList); 
 
-		while(act != NULL){
-	
+		int size = currProc->localNameList->size;
+		while(act != NULL && size){
+			printf("verbliebend: %d\n", size);
 			switch(((identDescr*)act->data)->identType){
 				case identVar: 
 					printf("\tVariable: %s\n",((identDescr*)act->data)->name);
@@ -398,6 +400,7 @@ int bl5(){ // --;--> (schließt Block von procedure ab)
 				default: break;
 			}
 			act=getNext(currProc->localNameList);
+			size--;
 		}
 		
 		if((procDescr*)currProc->prntProc != NULL) printf("umgebende Prozedur: %d\n", ((procDescr*)currProc->prntProc)->idx);
@@ -519,6 +522,8 @@ int fa2(){ //mcIdent (Konstante oder Variable)
 	int index;
 	int displ;
 	int procIdx;
+	
+	//int ret;
 	
 	int ret = searchConstant(Morph.Val.pStr, &index);
 	if(ret){
@@ -746,7 +751,13 @@ int st10(){ //Expression für ! (Wert steht auf Stack)
 	printf("st10 erreicht\n\tschreibe putVal in Buffer\n");
 
 	writeCode_0(putVal, codeBuf);
+	return 1;
+}
 
+int st11(){ // String für !
+	
+	printf("st11 erreicht\n\tschreibe putStrg und Zeichenkette in Buffer\n");
+	writePutStrg(Morph.Val.pStr, codeBuf);
 	return 1;
 }
 

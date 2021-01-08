@@ -98,8 +98,7 @@ int aTable_pi[12][11] =
 	{e, e, e, e, e, e, e, e, e, e,  e}, //Zustand 8 >=
 	{e, 2, 1, e, e, e, e, e, 2, 2,  e}, //Zustand 9 Anfang eines SW gelesen
 	{e, 2, 1, e, e, e, e, e, 2, 2,  e}, //Zustand 10 nur Zeichen eines SW gelesen
-	{1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  3} //Zustand 11 Zeichenkette
-	//TODO Zeichenkette -> sonstiges Sonderzeichen -> sl ist fraglich
+	{1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  3}  //Zustand 11 Zeichenkette
 };
 
 

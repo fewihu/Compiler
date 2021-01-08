@@ -75,6 +75,7 @@ listElement* getNext(listHead* head){
 		head->curr = nxt;
 		return nxt;
 	}else{
+		printf("LETZTES\n");
 		return NULL;
 	}
 }
