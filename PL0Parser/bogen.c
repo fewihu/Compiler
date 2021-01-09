@@ -148,32 +148,35 @@ tBogen gStmt[]={
 	{BogenS, {(unsigned long) '!'},     NULL, 20, 0},	// 6  !		(0-5)
 	//=============================================================================
 	{BogenS, {(unsigned long) zErg},    NULL,  8, 0},	// 7  := für IDENT		(1-8)
-	{BogenG, {(unsigned long) gExpr},   st2,  22, 0},	// 8  EXPR für IDENT	(8-X)
+	{BogenG, {(unsigned long) gExpr},   st2,  24, 0},	// 8  EXPR für IDENT	(8-X)
 	//=============================================================================						
-	{BogenM, {(unsigned long) mcIdent}, st8 , 22, 0},	// 9  IDENT für CALL	(4-X)
+	{BogenM, {(unsigned long) mcIdent}, st8 , 24, 0},	// 9  IDENT für CALL	(4-X)
 	//=============================================================================
 	{BogenG, {(unsigned long) gStmt},   NULL, 11, 0},	// 10 statement für BEGIN	(7-14)
 	{BogenS, {(unsigned long) ';'},     NULL, 10,12},	// 11 ';' trennt statements (14-7)
-	{BogenS, {(unsigned long) zEND},    NULL, 22, 0},	// 12 END zu BEGIN			(14-X)
+	{BogenS, {(unsigned long) zEND},    NULL, 24, 0},	// 12 END zu BEGIN			(14-X)
 	//=============================================================================
 	{BogenG, {(unsigned long) gCond},   st3 , 14, 0},	// 13 condition für IF	(2-9)
 	{BogenS, {(unsigned long) zTHN},    NULL, 15, 0},	// 14 THEN für IF		(9-15)
-	{BogenG, {(unsigned long) gStmt},   st4 , 22, 0},	// 15 statement für IF	(15-X)
+	{BogenG, {(unsigned long) gStmt},   NULL ,22, 0},	// 15 statement für IF	(15-X)
 	//=============================================================================
 	{BogenG, {(unsigned long) gCond},   st6 , 17, 0},	// 16 condition für WHILE	(3-10)
 	{BogenS, {(unsigned long) zDO},     NULL, 18, 0},	// 17 DO für WHILE			(10-16)
-	{BogenG, {(unsigned long) gStmt},   st7 , 22, 0},	// 18 statement für WHILE	(16-X)
+	{BogenG, {(unsigned long) gStmt},   st7 , 24, 0},	// 18 statement für WHILE	(16-X)
 	//=============================================================================
-	{BogenM, {(unsigned long) mcIdent}, st9, 22, 0},	// 19 IDENT für ?		(5-X)
+	{BogenM, {(unsigned long) mcIdent}, st9, 24, 0},	// 19 IDENT für ?		(5-X)
 	//=============================================================================
-	{BogenG, {(unsigned long) gExpr},   st10, 22, 21},	// 20 expression für !	(6-X)
+	{BogenG, {(unsigned long) gExpr},   st10, 24, 21},	// 20 expression für !	(6-X)
 	//=============================================================================
-	{BogenM, {(unsigned long) mcString},st11, 22, 0},	// 21 String für !
+	{BogenM, {(unsigned long) mcString},st11, 24, 0},	// 21 String für !
 	//=============================================================================
-	{BogenE, {(unsigned long) 0},		NULL,  0, 0}	// 22 X Ende
+	{BogenS, {(unsigned long) zELS},	st12,  23, 25},	// 22 ELSE zu IF
+	{BogenG, {(unsigned long) gStmt},	st13,  24, 0},	// 23 statement für ELSE
+	//=============================================================================
+	{BogenE, {(unsigned long) 0},		NULL,	0, 0},	// 24 X ENDE 
+	{BogenN, {(unsigned long) 0},		st4,   24, 0}	// 25 Nil für IF ohne ELSE
 };	
 
-//TODO alle 21 setzen auf neues Ende
 
 //==================================================
 //Block
@@ -231,13 +234,43 @@ tBogen gProg[]={
 	{BogenE, {(unsigned long) 0},     NULL, 0, 0}  // 2 X ENDE 
 };
 
-// Fehlercodes für "erwartetes Symbol nicht gelesen"
-static char* errormsg;
 static char* expectedS[]={
-	":=\n\0","<=\n\0",">=\n\0","begin\n\0","call\n\0","const\n\0","do\n\0",
-	"end\n\0","if\n\0","odd\n\0","procedure\n\0", "then\n\0","var\n\0","while\n\0"
+	":=\0","<=\0",">=\0","begin\0","call\0","const\0","do\0","end\0",
+	"if\0","odd\0","procedure\0", "then\0","var\0","while\0", "else\0"
 };
+static char errorCode[1024];
+int errorLength;
+void generateErrorCode(tBogen* actBogen){
+	
+	if(actBogen == &gTerm[0] || actBogen == &gTerm[3] || actBogen == &gTerm[5]){
+		strcpy(errorCode, "\n========== Faktor: "); return; }
+	if(actBogen == &gExpr[1] || actBogen == &gExpr[3] || actBogen == &gExpr[8] || actBogen == &gExpr[9]){
+		strcpy(errorCode, "\n========== Term: "); return; }
+	if(actBogen == &gFact[3] || actBogen == &gCond[1] || actBogen == &gCond[2] || actBogen == &gCond[9] || 
+	   actBogen == &gStmt[8] || actBogen == &gStmt[20]){
+	 	strcpy(errorCode, "\n========== Expression: "); return; }
+	if(actBogen == &gStmt[13] || actBogen == &gStmt[16]){
+		strcpy(errorCode, "\n========== Bedingung: "); return; }
+	if(actBogen == &gStmt[10] || actBogen == &gStmt[15] || actBogen == &gStmt[18] || actBogen == &gStmt[23] ||
+	   actBogen == &gBlck[18]){
+	   	strcpy(errorCode, "\n========== Statement: "); return; }
+	if(actBogen == &gBlck[16] || actBogen == &gProg[0]){
+		strcpy(errorCode, "\n========== Block: "); return; }
+	  
+}
 
+void genErrorCodeM(tBogen* actBogen){
+	
+	
+		if(actBogen == &gFact[0]){strcat(errorCode, ", Direkkonstante "); return;}
+		if(actBogen == &gStmt[9]){strcat(errorCode, ", Prozedurbezeichner "); return;}
+		if(actBogen == &gStmt[19]){strcat(errorCode, ", Variablenbezeichner "); return;}
+		if(actBogen==&gBlck[2]||actBogen==&gBlck[9]||actBogen==&gBlck[14]){
+			strcat(errorCode, ", neuer Bezeichner "); return;
+		}else{
+			strcat(errorCode, ", Wertbezeichner (var oder const) "); return;
+		}
+}
 
 int parse(tBogen* pGraph){
 	
@@ -254,32 +287,30 @@ int parse(tBogen* pGraph){
 			case BogenN: 
 				ret = 1; 
 				break;
-			case BogenS: 				
-				//vorsorglich erwartetes Symbol an Fehlermeldung anhängen
-				strcat(errormsg, " | Symbol oder Schlüsselwort: ");
-				if(pBogenBuf->BogenX.S > 127){
-					strcat(errormsg, expectedS[pBogenBuf->BogenX.S - 128]);
+			case BogenS: 
+				if(pBogenBuf->BogenX.S > 127){ 
+					strcat(errorCode, ", Schüselwort: ");
+					strcat(errorCode, expectedS[pBogenBuf->BogenX.S - 128]);	
 				}else{
-					char append[3] = {pBogenBuf->BogenX.S, '\n', '\0'};
-					strcat(errormsg, append);
-				}
-			
-				ret = (Morph.Val.Symb == pBogenBuf->BogenX.S); 
+					char append[3] = {pBogenBuf->BogenX.S,'\0'};
+					strcat(errorCode, ", Symbol: ");
+					strcat(errorCode, append);
+				}							
+				
+				ret = (Morph.Val.Symb == pBogenBuf->BogenX.S);
+				//if(!ret) generateErrorCode(pBogenBuf); 
 				break; 
-			case BogenM: 
-				//vorsorglich erwartetes Token an Fehlermeldung anhängen
-				strcat(errormsg, " | <Bezeichner>\n");
-				ret = (Morph.MC == pBogenBuf->BogenX.M);
-				break;
 			case BogenG:
-				//neuer Bogen -> Fehlermeldung hinfällig				
-				strcpy(errormsg, "\0");
+				generateErrorCode(pBogenBuf);
 				ret = parse(pBogenBuf->BogenX.G);
 				break;
+			case BogenM:
+				genErrorCodeM(pBogenBuf);
+				ret = (Morph.MC == pBogenBuf->BogenX.M);
+				//if(!ret) generateErrorCode(pBogenBuf);
+				break;
 			case BogenE:
-				
-				//alles okay -> Fehlermeldung hinfällig
-				strcpy(errormsg, "\0");
+				strcpy(errorCode, "\0");
 				return OK;		
 		}
 		
@@ -328,19 +359,19 @@ int main(int argc, char* argv[]){
 	codeLen 		= 0;
 	
 	//ersten 4 Bytes in Codeausgabe überspringen -> später mit Anzahl der Prozeduren überschreiben
-	test = fopen("test.cl0", "wb");
+	test = fopen("out.cl0", "wb");
 	int dummy = 0;
 	fwrite(&dummy, sizeof(int), 1, test);
 		
-	errormsg = malloc(1024);
+	errorLength = 0;
 	
-	if(argc > 1 && errormsg){
+	if(argc > 1){
 		if(initLex(argv[1])){			
 			if(parse(gProg) == 1){
 				printf("korrekt geparst\n");
 			}else{
-				printf("Syntaxfehler Zeile: %d, Spalte: %d\n",Morph.posLine, Morph.posCol);
-				printf("%s erwartet, aber \n",errormsg);
+				fclose(test); fclose(codeBuf); remove("out.cl0"); remove("codeBuf");
+				printf("Syntaxfehler Zeile: %d, Spalte: %d %s erwartet, aber\n", Morph.posLine, Morph.posCol, errorCode);
 				if(Morph.MC == mcSymb){
 					if(Morph.Val.Symb > 127)	printf("Schlüsselwort: %s gefunden\n", expectedS[Morph.Val.Symb - 128]);
 					else if(Morph.Val.Symb==-1)	printf("EOF gefunden\n");
@@ -352,7 +383,6 @@ int main(int argc, char* argv[]){
 			}
 		}
 	}else return 1;
-	
-	free(errormsg);	
+		
 	return 0;
 }

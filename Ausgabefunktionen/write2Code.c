@@ -15,7 +15,6 @@ void writePutStrg(char* string, FILE* codeBuf){
 	fwrite(&bCode, sizeof(char), 1, codeBuf); 
 	for(int i = 1; i < strlen(string)-1; i++){
 		bCode = *(string + i);
-		printf("PUT CHAR: %x\n",(int)bCode);
 		fwrite(&bCode, sizeof(char), 1, codeBuf); 
 		codeLen++;
 	}
