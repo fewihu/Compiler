@@ -5,12 +5,11 @@ lässt sich durch Ausführen des "make.sh" Skripts übersetzen, alternativ durch
 Die Datei lexTest.c dient dem Testen der korrekten Arbeitsweise des Lexers durch Übersetzen von lexTest.c und lex.c 
 ("make_lexTest.sh"; ist an Spracherweiterungen angepasst)
 
-Der Aufruf des Compilers sollt wie folgt aussehen:  ./PL0Compiler <Quelldatei.pl0> [-pt]
-Die Option "-pt" sorgt dafür das das nach erfolgreichem Durchlauf der Syntaxbaum des übersetzten Programms augegeben wird
+Der Aufruf des Compilers sollte wie folgt aussehen:  ./PL0Compiler <Quelldatei.pl0> [-pt]
+Die Option "-pt" sorgt dafür das das nach erfolgreichem Durchlauf der Syntaxbaum des übersetzten Programms ausgegeben wird
 
 Der Compiler verfügt über eine kleine Fehlermeldung ähnlich dem gcc: 
-Bei einem Syntaxfehler wird neben der Zeile auch das eigentlich vom Compiler erwartete Symbol, Schlüsselwort, oder Sprachkonstrukt 
-ausgegeben
+Bei einem Syntaxfehler wird neben der Zeile auch das eigentlich vom Compiler erwartete Symbol, Schlüsselwort, oder Sprachkonstrukt ausgegeben
 
 Es wurden die Spracherweiterungen: Zeichenketten und zusätzlicher else-Zweig implementiert
 die angepassten Syntaxgraphen liegen als Kommentare in der Datei bogen.c vor
