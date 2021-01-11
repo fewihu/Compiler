@@ -1,5 +1,4 @@
 //Praktikum 2 Compiler/Interpreter
-//Felix Müller, 18-041-61
 
 #include <stdio.h>
 #include <stdlib.h>

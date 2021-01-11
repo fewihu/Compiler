@@ -1,4 +1,3 @@
-//Felix Müller 18-041-61
 //Lexer PL0
 
 #ifndef LEX_H
@@ -14,7 +13,7 @@ typedef enum T_ZS{
 	zBGN, zCLL, zCST, zDO, zEND, zIF, zODD, zPRC, zTHN, zVAR, zWHL, zELS
 }tZS;
 
-//Morphemcodes
+//Morphemcodes     leer     Symbol  Zahl   Bezeich.  String
 typedef enum T_MC {mcEmpty, mcSymb, mcNum, mcIdent, mcString}tMC;
 
 //Morphem-Struktur

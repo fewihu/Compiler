@@ -1,4 +1,3 @@
-//Felix Müller 18-041-61 
 //Lexer PL0
 
 #include <stdio.h>
@@ -9,14 +8,14 @@
 #include "lex.h"
 
 //Index Funktionspointer beenden
-#define e 4
+#define e 4 
 
 //Prototypen für Lexeraktionen
-static void l(void);
-static void b(void);
-static void sl(void);
-static void gsl(void);
-static void slb(void);
+static void l(void);	//lesen
+static void b(void);	//beenden
+static void sl(void);	//schreiben + lesen
+static void gsl(void);	//großschreiben + lesen
+static void slb(void);	//schrieben + lesen + beenden
 
 //################################################################
 //Zeichenklassenvektor
@@ -40,7 +39,7 @@ static char zkv[128]=
 //Hashtabelle Schlüsselworterkennung
 //0... kein Schlüsselwort
 //1... begin, 2... call, 3... const, 4... do, 5... end, 6... if, 7... odd,
-//8... procedure, 9... then, 10... var, 11... while
+//8... procedure, 9... then, 10... var, 11... while, 12 else
 
 static char htkw[128]=
 {// 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
@@ -54,7 +53,7 @@ static char htkw[128]=
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  //7...
 };
 
-
+//Schlüsselworte für strcmp
 static char* cKw[12]=
 {
 	"BEGIN\0", "CALL\0", "CONST\0", "DO\0" , "END\0"  , "IF\0",
@@ -65,7 +64,7 @@ static char* cKw[12]=
 //################################################################
 //Automatentabellen
 
-//Automatentabelle(aktueller Zustand, Zeichenklasse -> Folgezustand)
+//aktueller Zustand, Zeichenklasse -> Folgezustand
 //Folgezustand e == 4 beim beenden der Übersicht halber 
 int aTable_fz[12][11]  =
 {  //SZ B  Z  :  =  <  >  - ASw sSw  "
@@ -101,7 +100,7 @@ int aTable_pi[12][11] =
 	{1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  3}  //Zustand 11 Zeichenkette
 };
 
-
+//globals
 static FILE* pFile;				//Quelldatei
 char c;							//aktuell gelesenes Zeichen
 static int line;				//Zeile von c
@@ -129,7 +128,7 @@ int initLex(char* fileName){
 	
 	c = fgetc(pFile);
 		
-	line 	= 1;
+	line 	= 1; 
 	col		= 0;	
 		
 	return 1;
@@ -258,11 +257,8 @@ static void slb(void){
 	b();
 }
 
-
-//################################################################
 //Funktionenarray für Aktionsfunktionen (l, sl, gsl, slb, b)
 static funcPointer fp[5] = { l, sl, gsl, slb, b };
-
 
 
 //################################################################
@@ -279,15 +275,13 @@ tMorph* lex(void){
 	Morph.posCol  = col;
 		
 	do{
-		//printf("ZUSTAND: %d\n",zustand);
-		//printf("KLASSE : %d\n",zkv[c]);
+
 		fZustand = aTable_fz[zustand]
 							[((int)zkv[((int)c)])];
 							
 		fp[aTable_pi[zustand]
 					[((int)zkv[((int)c)])]]();
 		zustand = fZustand;
-		//printf("FZUSTAND:%d\n",fZustand);
 	}while(end == 0);
 				
 	return &Morph;

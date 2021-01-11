@@ -1,4 +1,3 @@
-//Felix Müller 18-041-61 
 //Semantikroutinen PL0
 
 #ifndef SEMR_H
@@ -36,9 +35,6 @@ int st7();
 int st8();
 int st9();
 int st10();
-int st11();
-int st12();
-int st13();
 
 //Program
 int pr1();

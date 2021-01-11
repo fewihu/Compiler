@@ -1,4 +1,3 @@
-//Felix Müller 18-041-61 
 //Idents PL0
 
 #ifndef DESCR_H

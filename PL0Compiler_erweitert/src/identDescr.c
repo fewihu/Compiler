@@ -1,4 +1,3 @@
-//Felix Müller 18-041-61 
 //Idents PL0
 
 #include <stdlib.h>
@@ -6,6 +5,7 @@
 #include <string.h>
 #include "identDescr.h"
 
+//erzeugt neue Identbeschreibung
 identDescr* createIdentDescr(tIdentType identType, char* name){
 	
 	identDescr* new	= malloc(sizeof(identDescr));
@@ -25,6 +25,7 @@ identDescr* createIdentDescr(tIdentType identType, char* name){
 	}
 }
 
+//erzeugt neue Variablenbeschreibung
 varDescr* createVarDescr(int displacement){
 	
 	varDescr * new = malloc(sizeof(varDescr));
@@ -37,6 +38,7 @@ varDescr* createVarDescr(int displacement){
 	}
 }
 
+//erzeugt neue Konstantenbeschreibung
 constDescr* createConstDescr(long val, int idx){
 	
 	constDescr* new = malloc(sizeof(constDescr));
@@ -50,6 +52,7 @@ constDescr* createConstDescr(long val, int idx){
 	}
 }
 
+//erzeugt neue Prozedurbeschreibung mit lokaler Namensliste
 procDescr* createProcDescr(int idx, procDescr* prntProc){
 	
 	procDescr* new = malloc(sizeof(procDescr));
@@ -66,6 +69,7 @@ procDescr* createProcDescr(int idx, procDescr* prntProc){
 	}
 }
 
+//entfernt eine Identbeschreibung aus dem Speicher
 void deleteIdentDescr(identDescr* pDescr){
 
 	free(pDescr->pObj);

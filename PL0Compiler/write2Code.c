@@ -1,27 +1,9 @@
-//Felix Müller 18-041-61 
 //Augabefunktionen PL0
-
-#include <string.h>
 
 #include "write2Code.h"
 #include "code.h"
 
 int codeLen;
-
-//putStrg und Zeichenkette -> in Codepuffer schreiben
-void writePutStrg(char* string, FILE* codeBuf){
-	
-	char bCode = 27;
-	fwrite(&bCode, sizeof(char), 1, codeBuf); 
-	for(int i = 1; i < strlen(string)-1; i++){
-		bCode = *(string + i);
-		fwrite(&bCode, sizeof(char), 1, codeBuf); 
-		codeLen++;
-	}
-	bCode = 0;	//schließt Zeichenkette ab
-	fwrite(&bCode, sizeof(char), 1, codeBuf);
-	codeLen += 2;
-}
 
 //Binärcodes ohne Parameter -> in Codepuffer geschrieben
 void writeCode_0(tCode_0 opCode, FILE* codeBuf){

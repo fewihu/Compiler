@@ -1,4 +1,3 @@
-//Felix Müller 18-041-61 
 //Parser PL0
 
 #include <stdio.h>
@@ -12,23 +11,27 @@
 #include "semRoutinen.h"
 #include "code.h"
 
-//in lex.c als extern definiert
-tMorph Morph={0};
+//globals
+tMorph Morph={0};			//in lex.c als extern definiert, enthält akt. Morphem
 
 extern procDescr* currProc;	//aktuell umgebende Prozedur
+
+int recLevel; 				//Rekursionlevel für Einrückung Syntaxbaum
+static char errorCode[1024];//Buffer für Fehlermeldung
+
 extern long* constBlock;	//Konstantenblock
 extern int constBlockSize;	//Größe des Konstantenblocks
-extern int		codeLen;	//Codelänge
 
-extern entryProcCode actEPC;//struct das Informationen zum aktuellen EntryProc Code hält
+extern int		codeLen;	//Codelänge
 
 extern listHead* lablList;	//Liste mit Labeln für Sprünge
 
-extern short condCode;
+extern short condCode;		//Buffer für Conditioncode
 
-extern FILE* test;			//Ausgabedatei
+extern FILE* codeFile;		//Ausgabedatei
 extern FILE* codeBuf;		//Zwischendatei für Code der akt. Proc
 
+//Syntaxgraphen
 tBogen gExpr[]; //muss in factor bekannt sein
 
 //==================================================
@@ -83,8 +86,8 @@ tBogen gTerm[]={
 //		 '-'       term
 
 tBogen gExpr[]={
-	{BogenN, {(unsigned long) 0},		NULL, 1, 2},	//0 Nil	 (0-1)
-	{BogenG, {(unsigned long) gTerm}, 	NULL, 4, 0},	//1 TERM (1-3)
+	{BogenN, {(unsigned long) 0},		NULL, 1, 0},	//0 Nil	 (0-1)
+	{BogenG, {(unsigned long) gTerm}, 	NULL, 4, 2},	//1 TERM (1-3)
 	{BogenS, {(unsigned long) '-'}, 	NULL, 3, 0},	//2 -	 (0-2)
 	{BogenG, {(unsigned long) gTerm},	ex1 , 4, 0},	//3 TERM (2-3)
 	{BogenN, {(unsigned long) 0},		NULL, 5, 0},	//4 Nil	 (3-4)
@@ -122,24 +125,30 @@ tBogen gCond[]={
 //==================================================
 //Statement
 //
-//   --ident--> 1 ----':='---> 8 -----expr-------------------
-//  /                                                        \
-// |   ---IF--> 2 -condition-> 9 -----THEN----> 15 -statement-
-// |  /                                                       \
-// | | -WHILE-> 3 -condition-> 10 ----DO------> 16 -statement--
-//  \|/                                                        \
-//   0---CALL-> 4 ------------ident----------------------------> X
+//   ------ident------> 1 ------':='-----> 8 -------expr-------------------
+//  /                                		  		                       \
+// |  /------IF------> 2 ----condition----> 9 -----THEN----> 15 -statement-|
+// | |					                            	        /	   |
+// | |												           /	   |									 	 
+// | |														  /		   |		 							       
+// | |													  else-> 22    |
+// | |															 |	   |
+// | |                                                       statement |
+// | |															 |     |
+// | | -WHILE-> 3 -condition-> 10 ----DO------> 16 -statement--  |    /
+//  \|/                                                        \ |   /
+//   0---CALL-> 4 ------------ident----------------------------> X <-
 //  /|\						                                   /
 // | | --'?'--> 5 ------------ident----------------------------
 // | \                                                       /
-// |  --'!'---> 6 ------------expr--------------------------
+// |  --'!'---> 6 ------------expr or string-----------------
 //  \                                                      /
 //   --BEGIN--> 7 --statemnt-> 14 -----END-----------------
 //               \              /  
 //                ^----';'-----    
 
 tBogen gStmt[]={
-	{BogenM, {(unsigned long) mcIdent}, st1,  7, 1},	// 0  IDENT	(0-1)
+	{BogenM, {(unsigned long) mcIdent}, st1 ,  7, 1},	// 0  IDENT	(0-1)
 	{BogenS, {(unsigned long) zCLL},    NULL,  9, 2},	// 1  CALL	(0-4)
 	{BogenS, {(unsigned long) zBGN},    NULL, 10, 3},	// 2  BEGIN	(0-7)
 	{BogenS, {(unsigned long) zIF},     NULL, 13, 4},	// 3  IF	(0-2)
@@ -234,44 +243,48 @@ tBogen gProg[]={
 	{BogenE, {(unsigned long) 0},     NULL, 0, 0}  // 2 X ENDE 
 };
 
+//Namen zusammengesetzer Symbole und Schlüsselwörter, um Fehlermeldung zu generieren
 static char* expectedS[]={
 	":=\0","<=\0",">=\0","begin\0","call\0","const\0","do\0","end\0",
 	"if\0","odd\0","procedure\0", "then\0","var\0","while\0", "else\0"
 };
-static char errorCode[1024];
-int errorLength;
+
+//generiert Fehlermeldung für Teilgraphen
+//wird überschrieben mit dem ersten Symbol/Morphem des Graphen überschrieben
 void generateErrorCode(tBogen* actBogen){
 	
 	if(actBogen == &gTerm[0] || actBogen == &gTerm[3] || actBogen == &gTerm[5]){
-		strcpy(errorCode, "\n========== Faktor: "); return; }
+		strcpy(errorCode, "\nFaktor"); return; }
 	if(actBogen == &gExpr[1] || actBogen == &gExpr[3] || actBogen == &gExpr[8] || actBogen == &gExpr[9]){
-		strcpy(errorCode, "\n========== Term: "); return; }
+		strcpy(errorCode, "\nTerm"); return; }
 	if(actBogen == &gFact[3] || actBogen == &gCond[1] || actBogen == &gCond[2] || actBogen == &gCond[9] || 
 	   actBogen == &gStmt[8] || actBogen == &gStmt[20]){
-	 	strcpy(errorCode, "\n========== Expression: "); return; }
+	 	strcpy(errorCode, "\nExpression"); return; }
 	if(actBogen == &gStmt[13] || actBogen == &gStmt[16]){
-		strcpy(errorCode, "\n========== Bedingung: "); return; }
+		strcpy(errorCode, "\nBedingung"); return; }
 	if(actBogen == &gStmt[10] || actBogen == &gStmt[15] || actBogen == &gStmt[18] || actBogen == &gStmt[23] ||
 	   actBogen == &gBlck[18]){
-	   	strcpy(errorCode, "\n========== Statement: "); return; }
+	   	strcpy(errorCode, "\nStatement"); return; }
 	if(actBogen == &gBlck[16] || actBogen == &gProg[0]){
-		strcpy(errorCode, "\n========== Block: "); return; }
+		strcpy(errorCode, "\nBlock"); return; }
 	  
 }
 
+//generiert Fehlermeldung für Morphem
+//wird überschrieben, wenn Morphem gefunden wird
 void genErrorCodeM(tBogen* actBogen){
 	
-	
-		if(actBogen == &gFact[0]){strcat(errorCode, ", Direkkonstante "); return;}
-		if(actBogen == &gStmt[9]){strcat(errorCode, ", Prozedurbezeichner "); return;}
-		if(actBogen == &gStmt[19]){strcat(errorCode, ", Variablenbezeichner "); return;}
+		if(actBogen == &gFact[0]){strcpy(errorCode, "\nDirekkonstante"); return;}
+		if(actBogen == &gStmt[9]){strcpy(errorCode, "\nProzedurbezeichner"); return;}
+		if(actBogen == &gStmt[19]){strcpy(errorCode, "\nVariablenbezeichner"); return;}
 		if(actBogen==&gBlck[2]||actBogen==&gBlck[9]||actBogen==&gBlck[14]){
-			strcat(errorCode, ", neuer Bezeichner "); return;
+			strcpy(errorCode, "\nneuer Bezeichner "); return;
 		}else{
-			strcat(errorCode, ", Wertbezeichner (var oder const) "); return;
+			strcpy(errorCode, "\nWertbezeichner (var oder const)"); return;
 		}
 }
 
+//Parsefunktion
 int parse(tBogen* pGraph){
 	
 	tBogen* pBogenBuf	= pGraph;
@@ -289,16 +302,16 @@ int parse(tBogen* pGraph){
 				break;
 			case BogenS: 
 				if(pBogenBuf->BogenX.S > 127){ 
-					strcat(errorCode, ", Schüselwort: ");
-					strcat(errorCode, expectedS[pBogenBuf->BogenX.S - 128]);	
+					strcpy(errorCode, ", Schüselwort: \"");
+					strcat(errorCode, expectedS[pBogenBuf->BogenX.S - 128]);
+					strcat(errorCode, "\"");	
 				}else{
-					char append[3] = {pBogenBuf->BogenX.S,'\0'};
-					strcat(errorCode, ", Symbol: ");
+					char append[4] = {'"', pBogenBuf->BogenX.S, '"', '\0'};
+					strcpy(errorCode, ", Symbol: ");
 					strcat(errorCode, append);
-				}							
+				}				
 				
-				ret = (Morph.Val.Symb == pBogenBuf->BogenX.S);
-				//if(!ret) generateErrorCode(pBogenBuf); 
+				ret = (Morph.Val.Symb == pBogenBuf->BogenX.S); 
 				break; 
 			case BogenG:
 				generateErrorCode(pBogenBuf);
@@ -307,7 +320,6 @@ int parse(tBogen* pGraph){
 			case BogenM:
 				genErrorCodeM(pBogenBuf);
 				ret = (Morph.MC == pBogenBuf->BogenX.M);
-				//if(!ret) generateErrorCode(pBogenBuf);
 				break;
 			case BogenE:
 				strcpy(errorCode, "\0");
@@ -322,7 +334,6 @@ int parse(tBogen* pGraph){
 			
 			if(pBogenBuf->altBogen != 0){
 				//setze Alternativbogen	
-				//printf("alternative: %d\n",pBogenBuf->altBogen);
 				pBogenBuf = pGraph + pBogenBuf->altBogen;
 				
 			
@@ -342,6 +353,49 @@ int parse(tBogen* pGraph){
 	}
 }
 
+//löscht aufgebaute Datenstruktur und gibt wenn mode == 1 den Syntaxbaum aus
+void printSTree(procDescr* actProc, int mode){
+
+	recLevel++;
+	
+	if(actProc != NULL && actProc->localNameList != NULL){
+		
+		listElement* act = getFirst(actProc->localNameList);
+		int size = actProc->localNameList->size;
+		while(act != NULL && size > 0){
+			
+			identDescr* actIdent = (identDescr*)(act->data);
+			switch(actIdent->identType){
+				case identVar:
+					if(mode){
+						for(int i = 0; i < recLevel; i++) printf("  "); 
+						printf("var  : %s\n", actIdent->name);
+					}
+					break;
+				case identConst:
+					if(mode){
+						for(int i = 0; i < recLevel; i++) printf("  "); 
+						printf("const: %s\n", actIdent->name);
+					}
+					break;
+				case identProc:
+					if(mode){
+						for(int i = 0; i < recLevel; i++) printf("  "); 
+						printf("proc : %s\n", actIdent->name);
+					}
+					if((procDescr*)(actIdent->pObj) != NULL)
+						printSTree((procDescr*)(actIdent->pObj), mode);
+					break;
+			}
+			deleteIdentDescr(actIdent);
+			listElement* old = act;
+			act = getNext(actProc->localNameList); size--;
+			free(old);
+		}
+		recLevel--;
+	}
+}
+
 int main(int argc, char* argv[]){
 		
 	//Hauptprogramm als aktuelle Prozedur festlegen
@@ -351,6 +405,9 @@ int main(int argc, char* argv[]){
 	currProc->localNameList		= malloc(sizeof(listHead));
 	currProc->memAllocCount		= 0;
 	
+	//Rekursionlevel initialisieren
+	recLevel = -1;
+	
 	//Lableliste einrichten
 	lablList = malloc(sizeof(listHead));
 	
@@ -359,18 +416,20 @@ int main(int argc, char* argv[]){
 	codeLen 		= 0;
 	
 	//ersten 4 Bytes in Codeausgabe überspringen -> später mit Anzahl der Prozeduren überschreiben
-	test = fopen("out.cl0", "wb");
+	codeFile = fopen("out.cl0", "wb");
 	int dummy = 0;
-	fwrite(&dummy, sizeof(int), 1, test);
-		
-	errorLength = 0;
-	
-	if(argc > 1){
+	fwrite(&dummy, sizeof(int), 1, codeFile);
+			
+	if(argc > 1){ // Datei Quelldatei angegeben?
 		if(initLex(argv[1])){			
 			if(parse(gProg) == 1){
-				printf("korrekt geparst\n");
+				if(argc > 2 && strcmp(argv[2], "-pt") == 0) printSTree(currProc, 1);
+				else printSTree(currProc, 0);
+				deleteList(lablList);
+				printf("===============\nkorrekt geparst\nBytecode nach out.cl0 geschrieben\n");
 			}else{
-				fclose(test); fclose(codeBuf); remove("out.cl0"); remove("codeBuf");
+
+				fclose(codeFile); remove("out.cl0"); 				
 				printf("Syntaxfehler Zeile: %d, Spalte: %d %s erwartet, aber\n", Morph.posLine, Morph.posCol, errorCode);
 				if(Morph.MC == mcSymb){
 					if(Morph.Val.Symb > 127)	printf("Schlüsselwort: %s gefunden\n", expectedS[Morph.Val.Symb - 128]);
@@ -381,8 +440,13 @@ int main(int argc, char* argv[]){
 				else if(Morph.MC == mcNum)		printf("Zahl: %ld gefunden\n", Morph.Val.Num);
 				else 							printf("nichts gefunden\n");
 			}
+		}else{
+			printf("kann %s nicht öffnen\n", argv[1]);
+			return 1;
 		}
-	}else return 1;
-		
+	}else{ 
+		printf("keine Quelldatei .pl0 angegeben\n");	
+		return 1;
+	}
 	return 0;
 }

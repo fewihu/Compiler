@@ -1,4 +1,3 @@
-//Felix Müller 18-041-61 
 //Binärcodes PL0
 //übernommen von Prof A. Beck
 

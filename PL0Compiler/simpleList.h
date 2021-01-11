@@ -1,4 +1,3 @@
-//Felix Müller 18-041-61 
 //Liste PL0
 
 #ifndef LIST_H

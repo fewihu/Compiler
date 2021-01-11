@@ -1,4 +1,3 @@
-//Felix Müller 18-041-61 
 //Parser PL0
 
 #ifndef PARS_H

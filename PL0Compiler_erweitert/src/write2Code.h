@@ -1,4 +1,3 @@
-//Felix Müller 18-041-61 
 //Ausgabefunktionen PL0
 
 #include <stdio.h>
